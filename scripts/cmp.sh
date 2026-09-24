@@ -10,7 +10,7 @@ mode="${1:-diff}"
 # The guest login shell is fish, so pass values in through the bash script itself.
 { printf 'mode=%q base=%q\n' "$mode" "${BASELINE:-}"; cat << 'REMOTE'
 base="${base:-$HOME/.cache/vm-baseline}"
-files="kdeglobals plasmarc plasmashellrc kwinrc kwinrulesrc konsolerc kscreenlockerrc kglobalshortcutsrc gtk-3.0/settings.ini gtk-4.0/settings.ini plasma-org.kde.plasma.desktop-appletsrc"
+files="kdeglobals kcminputrc ksplashrc plasmarc plasmashellrc kwinrc kwinrulesrc konsolerc kscreenlockerrc kglobalshortcutsrc gtk-3.0/settings.ini gtk-4.0/settings.ini plasma-org.kde.plasma.desktop-appletsrc"
 if [ "$mode" = save ]; then
   for f in $files; do mkdir -p "$(dirname "$base/config/$f")"; cp -f ~/.config/"$f" "$base/config/$f" 2>/dev/null || true; done
   echo "baseline saved to $base"; exit 0

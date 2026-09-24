@@ -1,4 +1,4 @@
-# CachyOS test VM for setup-gamescope-boot.sh -- Windows version.
+# CachyOS test VM for steamify.sh -- Windows version.
 #   .\run.ps1 [-Install]
 # Needs QEMU for Windows (https://qemu.weilnetz.de/w64/) and the Windows
 # feature "Windows Hypervisor Platform" (for -accel whpx).

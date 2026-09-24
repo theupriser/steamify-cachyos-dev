@@ -1,11 +1,13 @@
 #!/bin/bash
-# CachyOS test VM for setup-gamescope-boot.sh.
+# CachyOS test VM for steamify.sh.
 #   [REPO=/path/to/cachyos-gamescope-boot] ./run.sh [install] [--nvidia] [--vulkan] [--fremont]
 #     install    boot the installer ISO
 #     --nvidia   render the guest's virtio-gpu (virgl) on the host NVIDIA dGPU
 #     --vulkan   expose Vulkan to the guest (venus; needed by gamescope, can be unstable)
 #     --fremont  report the Valve Steam Machine's DMI data (for testing the wizard)
 # REPO defaults to $HOME/projects/cachyos-gamescope-boot.
+# BIOS_VERSION=F7F0107 makes the guest report that BIOS version (DMI), e.g.
+# to test the wizard's BIOS update item; the firmware itself doesn't change.
 # The repo is shared into the guest; mount it there with:
 #   sudo mount -t 9p -o trans=virtio,version=9p2000.L repo /mnt
 # First-time SSH setup, inside the guest:
@@ -17,13 +19,14 @@ repo="${REPO:-$HOME/projects/cachyos-gamescope-boot}"
 cdrom=()
 smbios=()
 gpu=virtio-vga-gl,xres=1920,yres=1080
+[[ -n "${BIOS_VERSION:-}" ]] && smbios+=(-smbios "type=0,version=$BIOS_VERSION")
 for arg in "$@"; do
     case "$arg" in
         install)  cdrom=(-cdrom cachyos.iso -boot d) ;;
         --nvidia) export __NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia \
                          __EGL_VENDOR_LIBRARY_FILENAMES=/usr/share/glvnd/egl_vendor.d/10_nvidia.json ;;
         --vulkan) gpu+=,hostmem=4G,blob=true,venus=true ;;
-        --fremont) smbios=(-smbios type=1,manufacturer=Valve,product=Fremont -smbios type=2,manufacturer=Valve,product=Fremont) ;;
+        --fremont) smbios+=(-smbios type=1,manufacturer=Valve,product=Fremont -smbios type=2,manufacturer=Valve,product=Fremont) ;;
         *) echo "unknown argument: $arg" >&2; exit 1 ;;
     esac
 done

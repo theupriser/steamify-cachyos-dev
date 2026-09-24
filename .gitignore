@@ -3,6 +3,7 @@
 /*
 !/.gitignore
 !/README.md
+!/CHANGELOG.md
 !/run.sh
 !/run.ps1
 !/get-iso.sh

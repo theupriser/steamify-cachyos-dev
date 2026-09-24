@@ -15,7 +15,7 @@ GUEST_UID="${GUEST_UID:-1000}"
 export XDG_RUNTIME_DIR=/run/user/$uid WAYLAND_DISPLAY=wayland-0 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$uid/bus
 log=/tmp/wizard.log
 # shellcheck disable=SC2059
-printf "$input" | "$repo/setup-gamescope-boot.sh" > "$log" 2>&1; echo "exit=$?" >> "$log"
+printf "$input" | "$repo/steamify.sh" > "$log" 2>&1; echo "exit=$?" >> "$log"
 cat "$log"
 REMOTE
 } | vm_ssh bash -s 2>&1 | sed 's/\x1b\[[0-9;]*m//g'

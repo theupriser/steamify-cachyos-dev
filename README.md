@@ -1,7 +1,7 @@
-# cachyos-gamescope-boot dev environment
+# Steamify CachyOS dev environment
 
 A QEMU/KVM test VM running CachyOS (KDE Plasma 6) for developing and testing
-[cachyos-gamescope-boot](https://github.com/theupriser/cachyos-gamescope-boot),
+[Steamify CachyOS](https://github.com/theupriser/steamify-cachyos),
 plus helper scripts and a Claude Code skill that documents the test workflow.
 
 Only scripts and docs live here. The ISO, disk image, UEFI variable stores,
@@ -102,11 +102,18 @@ read-write as 9p tag `repo`; in the guest:
 - `--nvidia`: render the guest's virtio-gpu (virgl) on the host NVIDIA dGPU
 - `--vulkan`: expose Vulkan to the guest (venus; unstable)
 - `--fremont`: fake the Valve Steam Machine (Fremont) DMI data via `-smbios`
-- `REPO` defaults to `$HOME/projects/cachyos-gamescope-boot`
+- `REPO` defaults to `$HOME/projects/cachyos-gamescope-boot` (the local clone of
+  [steamify-cachyos](https://github.com/theupriser/steamify-cachyos))
 
 ## Helper scripts
 
+- `scripts/vmreset.sh [--fremont]`: restore `ssh-ready`, boot, mount the repo, autologin into Plasma
+  (and skip the broken krfoss mirror, install shellcheck)
 - `scripts/vmrun.sh '<menu input>'`: run the wizard in the guest's Plasma session with scripted input
+- `scripts/vmwatch.sh [--release] '<menu input>' [label]`: same, but in a visible Konsole window
+  in the VM; `--release` runs the newest GitHub release instead of the mounted repo
+- `scripts/vmshot.sh [--clean] <out.png>`: screenshot the guest's desktop (`--clean` closes
+  Steam, CachyOS Hello and Konsole first)
 - `scripts/vmstate.sh`: print the state of every wizard component
 - `scripts/cmp.sh [save]`: save / diff the guest's KDE configs against a baseline
 
