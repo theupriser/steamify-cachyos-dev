@@ -14,7 +14,7 @@ which components are on and toggles them to match the user's choice. Menu order:
 4. Steam Deck/Machine icons (`STEAM_GAMEPADUI_ARGS -steamos3`)
 5. Single user mode (SDDM, no lock screen/user switching/log out, Valve's empty KDE wallet; enabling it enables 1, disabling 1 disables it)
 6. Steamify shortcut (desktop icon + launcher entry that `curl | bash` the newest release; its gear icon is a release asset)
-7. HDMI-CEC (any PC, opt-in, never pre-ticked: Valve's cecd from the holo repo; see "Fake HDMI-CEC")
+7. HDMI-CEC (any PC; pre-ticked on a first run only on Fremont: Valve's cecd/cec-audio-control/inputattach-cec-units from the holo repo, the steam-launcher drop-in that overrides `STEAM_ENABLE_CEC=0`; see "Fake HDMI-CEC")
 8. Steam Machine support (only on DMI Valve/Fremont: leds-valve-dkms-git built for every kernel via `/etc/dkms/leds-valve-dkms.conf`, `ensure-kernel-headers.service`, udev rule, steamos-manager, powerdevilrc)
 9. └ Pin the kernel to 7.1.6-1 (sub-option of 8, ticked along with it; packages in `/var/cache/steamify/kernel`)
 10. Update BIOS (only on Fremont, an opt-in action, never pre-ticked; tickable only when Valve has a newer BIOS)
@@ -39,7 +39,7 @@ snapshot commands below run in that directory. `scripts/vmreset.sh` takes
 scripts/vmreset.sh --fremont        # restore ssh-ready, boot, mount repo, autologin, wait for Plasma
                                     # (also skips the broken krfoss mirror, installs shellcheck)
 scripts/cmp.sh save                 # baseline of the KDE configs
-scripts/vmwatch.sh '1\n3\n\ny\n' "Theme only"   # wizard in a visible Konsole in the VM
+scripts/vmwatch.sh 'q\n' "Menu"   # wizard in a visible Konsole in the VM (read the ticks first)
 scripts/vmwatch.sh --release '\ny\nm\nq\n' "Full run"   # the newest GitHub release instead of /mnt
 scripts/vmstate.sh                  # component state
 scripts/vmshot.sh --clean /path/shot.png    # screenshot (--clean: close Steam/Hello/Konsole first)
@@ -62,7 +62,7 @@ window: `vmrun.sh` runs invisibly over SSH, so they see nothing happen.
 Start in the background:
 
 ```bash
-./run.sh --fremont > /tmp/vm.log 2>&1 &     # flags: [install] [--fremont] [--nvidia] [--vulkan]
+./run.sh --fremont > /tmp/vm.log 2>&1 &     # flags: [install] [--fremont] [--nvidia] [--vulkan [--amd]]
 ```
 
 Wait for SSH:
@@ -167,19 +167,22 @@ line at the restart question.
 
 | Input | Meaning |
 |---|---|
-| `'\ny\nm\nq\n'` | first run, accept all (not the BIOS item), back to the menu, quit |
-| `'2\n\ny\n'` | toggle the theme |
+| `'\ny\nm\nq\n'` | first run, accept what's pre-ticked (not Boot into desktop, not BIOS; HDMI-CEC only on Fremont), back to the menu, quit |
+| `'3\n\ny\n'` | toggle the theme (while 1 is ticked) |
+| `'7\n\ny\nm\nq\nn\n'` | toggle HDMI-CEC (while 1 is ticked) |
 | `'a\ny\nm\nq\n'` | re-apply what is on (includes the conversion, so a restart is pending) |
 | `'q\n'` | just show the menu |
-| `'1\n3\n5\n\ny\n'` | from all-off: theme only (with `--fremont` also add `6\n` to drop Steam Machine support) |
 | `'1\n\ny\n'` | from a state where 1 is off: turn the conversion on |
 
 **Know the starting ticks before choosing input.** When *everything* is off
 (fresh snapshot, or after turning the last component off), the menu treats it
-as a first run and pre-ticks **all** components, so `2` means "theme off,
-rest on". Otherwise the ticks show what is on now. Unticking 1 also unticks 4,
-and ticking 4 ticks 1 again, so `'1\n3\n4\n...'` ends with the conversion on.
-When unsure, run `'q\n'` first and read the ticks.
+as a first run and pre-ticks the components (not Boot into desktop, BIOS, or
+HDMI-CEC off Fremont). Otherwise the ticks show what is on now. Unticking 1
+also unticks single user mode (5) and **hides** the Boot into row (2), so
+every later number moves up one; the same for Steam Machine support (8) and
+its kernel pin row (9). Ticking 5 ticks 1 again. The numbers apply to the
+menu as it is when you type them, one line at a time. When unsure, run
+`'q\n'` first and read the ticks.
 
 `a` only re-applies components that are already on: it does not retry one that
 failed. Re-applying the conversion also resets the autologin session to
@@ -260,13 +263,20 @@ autologin, then (all passed last run; `scripts/vmstate.sh` after every step):
 
 1. Fresh run turning everything on (`'\ny\nm\nq\n'`), set session to plasma, reboot:
    SDDM logs straight in, Vapor desktop, three desktop icons (Return to Gaming
-   Mode, Steam, Steamify CachyOS with the gear icon), LEDs loaded (17 nodes).
+   Mode, Steam, Steamify CachyOS with the gear icon), LEDs loaded (17 nodes),
+   `uname -r` 7.1.6-1-cachyos and `pacman -Qu` shows linux-cachyos `[ignored]`,
+   `~/.local/share/kwalletd/kdewallet.kwl.bak-steamify` next to Valve's empty wallet,
+   `steamos-manager-configure-cecd` enabled and `~/.config/cecd/config.d/00-steamos-manager.toml` written.
 2. Rerun: all shown on, "Everything is already the way you want it".
 3. `a` re-apply: no duplicate journal entries.
 4. Theme on: Steam Deck wallpaper, full-width 46px panel, `distributor-logo-steamdeck` launcher icon, `dark-lnf=com.valve.vapor.desktop` (Brightness & Color's Dark Mode toggle is on, hint "Switch to Breeze"); with single user on, kickoff keeps `primaryActions=3`. Theme off: CachyOS wallpaper, floating 30px panel, CachyOS launcher icon, BreezeDark colors (not light), `cachyos-vapor` removed, `cmp.sh` clean.
 5. Single user off: switches to plasmalogin + sync bridge + sudoers; shortcut Exec uses `sudo -n`.
 6. Single user on: back to SDDM.
-7. Icons + Steam Machine support off: driver, udev rule, modules-load, steamos-manager removed; yay kept.
+7. Icons + Steam Machine support off: driver, udev rule, modules-load, steamos-manager removed; yay kept;
+   kernel pin removed (`IgnorePkg` empty, `pacman -Syu` back to the current kernel), files kept in
+   `/var/cache/steamify/kernel`. On again (even with the CachyOS servers blocked in
+   `/etc/hosts`): installs 7.1.6 from that directory; DKMS builds the LED driver once per kernel.
+7c. HDMI-CEC: load vivid, then `scripts/vmcec.sh` (all PASS), off/on via the menu.
 7b. DKMS: `vmstate.sh` shows `installed` for every kernel. Headers at boot:
    `sudo pacman -R --noconfirm linux-cachyos-lts-headers` (DKMS drops the LTS
    build), set the session to plasma, reboot, then `journalctl -b -u
@@ -361,6 +371,18 @@ directly over SSH lack the session's Qt platform theme and look light; start
 them with `systemd-run --user <app>`.
 
 ## Pitfalls
+
+- After a reboot or hard restart the autologin may be back on gamescope
+  (black screen): `sudo /usr/lib/steamos/steam-set-session plasma.desktop &&
+  sudo systemctl restart display-manager`.
+- `vmreset.sh` sometimes stops at "Plasma did not start" (the greeter stays up
+  although the test autologin file is there): restart the display manager.
+- `pkill -f '<pattern>'` from the host shell also matches the command running
+  it and kills it (exit 144): match something narrower, or kill by PID.
+- Counting sudo password prompts (the VM has NOPASSWD): move
+  `/etc/sudoers.d/99-test-vm` aside, give the user a password, run the wizard
+  in a Python `pty` that answers `[sudo] password` and logs each prompt, then
+  put the file back. `makepkg -i` runs `sudo -k` and always asks again.
 
 - Broken mirror: `mirror5.krfoss.org` served a bad `.sig` ("Maximum file size
   exceeded"), failing the conversion's package install. `vmreset.sh` comments
