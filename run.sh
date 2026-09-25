@@ -49,4 +49,5 @@ exec qemu-system-x86_64 \
     -nic user,model=virtio-net-pci,hostfwd=tcp::2222-:22 \
     -virtfs local,path="$repo",mount_tag=repo,security_model=mapped-xattr \
     -virtfs local,path="$PWD/share",mount_tag=vmtools,security_model=mapped-xattr,readonly=on \
+    -qmp unix:"$PWD/qmp.sock",server=on,wait=off \
     "${smbios[@]}" "${cdrom[@]}"

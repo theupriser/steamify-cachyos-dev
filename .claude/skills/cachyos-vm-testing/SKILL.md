@@ -274,33 +274,47 @@ the environment through). fwupd correctly refuses the firmware in the VM
 A successful dry run counts as staged, so `[m]`/`[r]` and the restart question
 on `q` show up too; in dry-run mode "restart" only prints.
 
-## Fake HDMI-CEC (vivid)
+## Fake HDMI-CEC (vivid): `scripts/vmcec.sh`
 
 The VM has no CEC hardware; the kernel's `vivid` test driver emulates it: a
-virtual HDMI input (`/dev/cec0`, plays the TV) and output (`/dev/cec1`, the
-PC). Needs the HDMI-CEC item on (cecd installed); `cec-ctl` is in v4l-utils.
+virtual HDMI input (`/dev/cec0`, plays the TV via `cec-ctl`/`cec-follower`)
+and output (`/dev/cec1`, the PC, where cecd runs). Needs the HDMI-CEC item on;
+the Steam-settings checks need Steam Machine support (steamos-manager).
 
 ```bash
-ssh -p 2222 -o BatchMode=yes theupriser@localhost bash -s << 'EOF'
-export XDG_RUNTIME_DIR=/run/user/1000 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus
-sudo modprobe vivid n_devs=1 num_inputs=1 input_types=0x3 num_outputs=1 output_types=0x1
-cec-ctl -d /dev/cec0 --tv --phys-addr 0.0.0.0 --osd-name "Sony TV" >/dev/null
-# plug the output into the input: the PC side gets 1.0.0.0
-v4l2-ctl -d /dev/video0 --set-ctrl hdmi_000_0_is_connected_to=2
-# the cecd service (-e) grabs every CEC device, the TV too: run it on the output only
-systemctl --user stop cecd; systemd-run --user -q --unit=cecd-test /usr/bin/cecd -d /dev/cec1
-sleep 4; cec-ctl -d /dev/cec1 | grep -E "Physical Address|Logical Address  "   # 1.0.0.0, e.g. 8
-EOF
+scripts/vmcec.sh              # all checks + a real suspend/resume (~5 min)
+scripts/vmcec.sh --no-sleep   # without suspending the VM
+scripts/vmcec.sh --sleep-only # only the suspend/resume check
+scripts/vmwake.sh             # wake a sleeping VM (QMP socket from run.sh)
 ```
 
-Then, with `T="cec-ctl -d /dev/cec0 -t 8"` (the PC's logical address):
-`$T --give-osd-name` (the Steam Machine answers "Steam Machine"), remote keys
-`$T --user-control-pressed ui-cmd=down` + `$T --user-control-released`
-(arrive as KEY_DOWN on the `cecd vivid-000-vid-out0` input device; there's no
-evtest, read `/dev/input/eventN` with a small python struct reader), and PC to
-TV: `sudo cec-ctl -d /dev/cec0 -M` (monitor needs root) while running
-`cectool -d /dev/cec1 set-active|volume-up|standby`. Afterwards
-`systemctl --user stop cecd-test; sudo modprobe -r vivid; systemctl --user start cecd`.
+It prints PASS/FAIL/SKIP for: identity (address 1.0.0.0, name "Steam
+Machine", Valve vendor ID), every TV remote key and the key it becomes, the
+Steam settings over D-Bus (remote control, WakeTv, SuspendTv, SuspendDevice
+and cecd's config), PC to TV (make active, wake, volume, audio status,
+standby), TV standby putting the PC to sleep (blocked by an inhibitor), and
+sleep/wake turning the TV off and on.
+
+Gotchas it handles, learned the hard way:
+- The cecd service (`-e`) grabs every CEC device, the fake TV too: the test
+  uses a temporary drop-in (`~/.config/systemd/user/cecd.service.d/vmcec.conf`)
+  with `-d /dev/cec1`, removed at the end.
+- The TV's power button (KEY_POWER) and TV standby with SuspendDevice on
+  really suspend the VM (Steam Machine support makes the power button sleep):
+  block with `sudo systemd-inhibit --what=sleep:handle-power-key` (as user it's
+  refused). If the VM sleeps anyway: `scripts/vmwake.sh` (the QEMU window's
+  keyboard doesn't wake it; a VM started before run.sh had `-qmp` needs a hard restart).
+- `rtcwake` skips logind, so cecd never sees the sleep: suspend with
+  `systemctl suspend` and wake over QMP.
+- `steamosctl get/set-hdmi-cec-suspend-tv|suspend-device` don't work
+  (steamos-manager 26.4.1); Steam uses the D-Bus properties of
+  `com.steampowered.SteamOSManager1.HdmiCec2`, and so does the test.
+- The kernel answers "give OSD name" itself, even without cecd: it's no proof
+  cecd runs. cecd logs "Putting TV in standby" only at `RUST_LOG=debug`.
+- CecDevice1 methods take arguments (`VolumeUp y 0`, Daemon1 `Standby b true`).
+- After the test (or a hard restart) CachyOS may put autologin back on
+  gamescope: set the session to plasma and restart the display manager.
+
 The menu item is 7 (8 = Steam Machine support, 9 = kernel pin, 10 = BIOS with `--fremont`).
 
 ## Steamify shortcut
