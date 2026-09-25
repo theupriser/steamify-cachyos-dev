@@ -9,14 +9,18 @@ The wizard (`steamify.sh` + `lib/*.sh`) opens a menu that detects
 which components are on and toggles them to match the user's choice. Menu order:
 
 1. SteamOS conversion (boot into gaming mode via autologin, Return to Gaming Mode shortcut, Steam desktop autostart)
-2. SteamOS theme (installs `cachyos-vapor` and applies the Vapor global theme with its desktop and window layout; needs a running Plasma session)
-3. Steam Deck/Machine icons (`STEAM_GAMEPADUI_ARGS -steamos3`)
-4. Single user mode (SDDM, no lock screen/user switching/log out; enabling it enables 1, disabling 1 disables it)
-5. Steamify shortcut (desktop icon + launcher entry that `curl | bash` the newest release; its gear icon is a release asset)
-6. Steam Machine support (only on DMI Valve/Fremont: leds-valve-dkms-git built for every kernel via `/etc/dkms/leds-valve-dkms.conf`, `ensure-kernel-headers.service`, udev rule, steamos-manager, powerdevilrc)
-7. Update BIOS (only on Fremont, an opt-in action, never pre-ticked; tickable only when Valve has a newer BIOS)
+2. └ Boot into: gamescope / desktop (sub-option of 1, shown while 1 is ticked; Left/Right or the number switches it)
+3. SteamOS theme (installs `cachyos-vapor` and applies the Vapor global theme with its desktop and window layout; needs a running Plasma session)
+4. Steam Deck/Machine icons (`STEAM_GAMEPADUI_ARGS -steamos3`)
+5. Single user mode (SDDM, no lock screen/user switching/log out, Valve's empty KDE wallet; enabling it enables 1, disabling 1 disables it)
+6. Steamify shortcut (desktop icon + launcher entry that `curl | bash` the newest release; its gear icon is a release asset)
+7. HDMI-CEC (any PC, opt-in, never pre-ticked: Valve's cecd from the holo repo; see "Fake HDMI-CEC")
+8. Steam Machine support (only on DMI Valve/Fremont: leds-valve-dkms-git built for every kernel via `/etc/dkms/leds-valve-dkms.conf`, `ensure-kernel-headers.service`, udev rule, steamos-manager, powerdevilrc)
+9. └ Pin the kernel to 7.1.6-1 (sub-option of 8, ticked along with it; packages in `/var/cache/steamify/kernel`)
+10. Update BIOS (only on Fremont, an opt-in action, never pre-ticked; tickable only when Valve has a newer BIOS)
 
-Without `--fremont` the menu has only 1-5.
+Without `--fremont` the menu has only 1-7. Numbers shift when a parent is
+unticked (its sub-option is hidden), so read the ticks with `'q\n'` first.
 
 Undo journals live in `~/.local/state/cachyos-gamescope-boot/` in the guest.
 
@@ -264,11 +268,40 @@ differs from Valve's newest. Fake an older one with
 the environment through). fwupd correctly refuses the firmware in the VM
 ("not for this machine's hardware"), so walk the whole flow with
 `WIZARD_BIOS_DRY_RUN=1` (skips only that check, never flashes). Scripted:
-`printf '7\n\ny\ny\nUPDATE\nm\nq\nn\n' | WIZARD_BIOS_DRY_RUN=1 /mnt/steamify.sh`
-(BIOS is item 7 with `--fremont`; the final `n` answers the restart question).
+`printf '10\n\ny\ny\nUPDATE\nm\nq\nn\n' | WIZARD_BIOS_DRY_RUN=1 /mnt/steamify.sh`
+(BIOS is item 10 with `--fremont`; the final `n` answers the restart question).
 
 A successful dry run counts as staged, so `[m]`/`[r]` and the restart question
 on `q` show up too; in dry-run mode "restart" only prints.
+
+## Fake HDMI-CEC (vivid)
+
+The VM has no CEC hardware; the kernel's `vivid` test driver emulates it: a
+virtual HDMI input (`/dev/cec0`, plays the TV) and output (`/dev/cec1`, the
+PC). Needs the HDMI-CEC item on (cecd installed); `cec-ctl` is in v4l-utils.
+
+```bash
+ssh -p 2222 -o BatchMode=yes theupriser@localhost bash -s << 'EOF'
+export XDG_RUNTIME_DIR=/run/user/1000 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus
+sudo modprobe vivid n_devs=1 num_inputs=1 input_types=0x3 num_outputs=1 output_types=0x1
+cec-ctl -d /dev/cec0 --tv --phys-addr 0.0.0.0 --osd-name "Sony TV" >/dev/null
+# plug the output into the input: the PC side gets 1.0.0.0
+v4l2-ctl -d /dev/video0 --set-ctrl hdmi_000_0_is_connected_to=2
+# the cecd service (-e) grabs every CEC device, the TV too: run it on the output only
+systemctl --user stop cecd; systemd-run --user -q --unit=cecd-test /usr/bin/cecd -d /dev/cec1
+sleep 4; cec-ctl -d /dev/cec1 | grep -E "Physical Address|Logical Address  "   # 1.0.0.0, e.g. 8
+EOF
+```
+
+Then, with `T="cec-ctl -d /dev/cec0 -t 8"` (the PC's logical address):
+`$T --give-osd-name` (the Steam Machine answers "Steam Machine"), remote keys
+`$T --user-control-pressed ui-cmd=down` + `$T --user-control-released`
+(arrive as KEY_DOWN on the `cecd vivid-000-vid-out0` input device; there's no
+evtest, read `/dev/input/eventN` with a small python struct reader), and PC to
+TV: `sudo cec-ctl -d /dev/cec0 -M` (monitor needs root) while running
+`cectool -d /dev/cec1 set-active|volume-up|standby`. Afterwards
+`systemctl --user stop cecd-test; sudo modprobe -r vivid; systemctl --user start cecd`.
+The menu item is 7 (8 = Steam Machine support, 9 = kernel pin, 10 = BIOS with `--fremont`).
 
 ## Steamify shortcut
 
