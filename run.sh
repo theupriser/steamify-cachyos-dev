@@ -1,9 +1,10 @@
 #!/bin/bash
 # CachyOS test VM for steamify.sh.
-#   [REPO=/path/to/cachyos-gamescope-boot] ./run.sh [install] [--nvidia] [--vulkan] [--fremont]
+#   [REPO=/path/to/cachyos-gamescope-boot] ./run.sh [install] [--nvidia] [--vulkan] [--amd] [--fremont]
 #     install    boot the installer ISO
 #     --nvidia   render the guest's virtio-gpu (virgl) on the host NVIDIA dGPU
 #     --vulkan   expose Vulkan to the guest (venus; needed by gamescope, can be unstable)
+#     --amd      with --vulkan: venus on the host AMD iGPU (RADV) instead of NVIDIA
 #     --fremont  report the Valve Steam Machine's DMI data (for testing the wizard)
 # REPO defaults to $HOME/projects/cachyos-gamescope-boot.
 # BIOS_VERSION=F7F0107 makes the guest report that BIOS version (DMI), e.g.
@@ -26,6 +27,7 @@ for arg in "$@"; do
         --nvidia) export __NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia \
                          __EGL_VENDOR_LIBRARY_FILENAMES=/usr/share/glvnd/egl_vendor.d/10_nvidia.json ;;
         --vulkan) gpu+=,hostmem=4G,blob=true,venus=true ;;
+        --amd) export VK_DRIVER_FILES=/usr/share/vulkan/icd.d/radeon_icd.json ;;
         --fremont) smbios+=(-smbios type=1,manufacturer=Valve,product=Fremont -smbios type=2,manufacturer=Valve,product=Fremont) ;;
         *) echo "unknown argument: $arg" >&2; exit 1 ;;
     esac

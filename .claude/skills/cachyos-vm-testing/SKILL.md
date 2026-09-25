@@ -187,6 +187,20 @@ gamescope, so set it back to plasma before the next reboot (below).
 
 ## Gamescope does not render in this VM
 
+
+Everything was tried (2026-09-25); don't spend time on it again:
+- virgl (default): no Vulkan, black.
+- `--vulkan --amd` (venus on the host 780M, RADV): gamescope and Steam run,
+  but virtio-gpu rejects every framebuffer gamescope makes ("Cannot import FB
+  to DRM ... not supported for scan-out", AR24 and XR24, also with
+  `--force-composition --disable-layers`): black. KWin crashes on venus
+  ("Illegal command buffer"), so Plasma freezes too.
+- nested gamescope with lavapipe (`vulkan-swrast`): refuses to start, lavapipe
+  lacks VK_KHR_present_id/present_wait.
+- Other hypervisors (VirtualBox, VMware) have no Vulkan at all.
+Check gaming mode (Steam's settings, HDMI-CEC section, refresh rates) on the
+real Steam Machine. The VM covers everything else.
+
 (Also after any re-apply that includes the conversion.)
 
 No suitable Vulkan (venus is unstable with the host NVIDIA driver). After
