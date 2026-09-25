@@ -17,14 +17,6 @@ tracked file to it explicitly.
 - `curl` and `sha256sum` for `get-iso.sh`.
 - Optional: an NVIDIA dGPU for `--nvidia` (PRIME offload of the virgl renderer).
 
-### Windows
-
-`run.ps1` and `get-iso.ps1` are Windows versions. They need
-[QEMU for Windows](https://qemu.weilnetz.de/w64/) (or set `QEMU_DIR`) and the
-"Windows Hypervisor Platform" feature (`-accel whpx`). Windows QEMU has no 9p
-shares: copy the repo into the guest with `scp -P 2222 -r ...`, and authorize
-your key with `.\add-ssh-key.ps1 -User <vm-user>`.
-
 ## Quick start
 
 ```bash
@@ -77,8 +69,7 @@ user's password:
 ssh-copy-id -p 2222 <vm-user>@localhost
 ```
 
-On Windows, use `.\add-ssh-key.ps1 -User <vm-user>` instead (it creates a key
-if needed). If SSH hangs at "banner exchange", `sshd` isn't running in the
+If SSH hangs at "banner exchange", `sshd` isn't running in the
 guest or a firewall blocks port 22; check with `systemctl is-active sshd` in
 the guest.
 

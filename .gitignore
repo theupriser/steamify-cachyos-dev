@@ -5,10 +5,7 @@
 !/README.md
 !/CHANGELOG.md
 !/run.sh
-!/run.ps1
 !/get-iso.sh
-!/get-iso.ps1
-!/add-ssh-key.ps1
 !/scripts/
 !/share/
 !/.claude/
