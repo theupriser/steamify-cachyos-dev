@@ -11,7 +11,9 @@ tracked file to it explicitly.
 
 ## Requirements
 
-- Linux host with KVM, `qemu-system-x86_64` (GTK/OpenGL display, virtfs/9p) and `qemu-img`
+- An x86_64 Linux host with KVM (not Windows or macOS: `run.sh` relies on KVM,
+  memfd and GTK/virgl, and CachyOS only exists for x86_64),
+  `qemu-system-x86_64` (GTK/OpenGL display, virtfs/9p) and `qemu-img`
   (Ubuntu: `sudo apt install qemu-system-x86 qemu-utils ovmf`).
 - OVMF firmware at `/usr/share/OVMF/OVMF_CODE_4M.fd` and `OVMF_VARS_4M.fd`.
 - `curl` and `sha256sum` for `get-iso.sh`.
