@@ -16,8 +16,15 @@ which components are on and toggles them to match the user's choice. Menu order:
 6. Steamify shortcut (desktop icon + launcher entry that `curl | bash` the newest release; its gear icon is a release asset)
 7. HDMI-CEC (any PC; pre-ticked on a first run only on Fremont: Valve's cecd/cec-audio-control/inputattach-cec-units from the holo repo, the steam-launcher drop-in that overrides `STEAM_ENABLE_CEC=0`; see "Fake HDMI-CEC")
 8. Steam Machine support (only on DMI Valve/Fremont: leds-valve-dkms-git built for every kernel via `/etc/dkms/leds-valve-dkms.conf`, `ensure-kernel-headers.service`, udev rule, steamos-manager, powerdevilrc)
-9. └ Pin the kernel to 7.1.6-1 (sub-option of 8, ticked along with it; packages in `/var/cache/steamify/kernel`)
-10. Update BIOS (only on Fremont, an opt-in action, never pre-ticked; tickable only when Valve has a newer BIOS)
+9. └ Power-off fix (sub-option of 8, ticked along with it, opt-out: DKMS module `steamify-fremont-poweroff` for every kernel; in the VM it loads but finds no real GPIO wake bit to clear)
+10. └ Update BIOS (only on Fremont, an opt-in action, never pre-ticked; tickable only when Valve has a newer BIOS)
+
+Since 2.2.0 "Pin the kernel" and "HDMI refresh boost" are only shown while
+something of them is left, unticked, so a normal run removes them. The menu
+marks components a normal run will update with "(update)" (feature versions
+in `~/.local/state/cachyos-gamescope-boot/features.state`; set an entry to an
+older version, e.g. `machine=2.1.0`, to test the update flow in the menu and
+the app).
 
 Without `--fremont` the menu has only 1-7. Numbers shift when a parent is
 unticked (its sub-option is hidden), so read the ticks with `'q\n'` first.
@@ -32,6 +39,35 @@ The VM's disk, `vars*.fd` and `run.sh` copy may live outside the repo
 `readlink /proc/$(pgrep -f '^qemu-system')/cwd` when the VM runs; the
 snapshot commands below run in that directory. `scripts/vmreset.sh` takes
 `VM_DIR` and defaults to the repo if it holds `disk.qcow2`, else `~/vms/cachyos-test`.
+
+## Always let the user watch
+
+The user follows the tests in the VM's window (on the Steam Machine, over
+Moonlight). **Every run is visible**: run the wizard and every other test
+command in the tmux-backed Konsole on the VM's desktop ("Visible terminal"
+below), never hidden over SSH. When a run was started hidden anyway, open a
+Konsole that follows its log (`tail -n +1 -f <log>`) right away. **Show the
+app too**: start it on the VM's desktop (`systemd-run --user
+/mnt/ui/steamify-ui`) for the screens you test, and screenshot it.
+
+## The VM on the Steam Machine
+
+The Mac has no KVM, so the VM runs on the Steam Machine
+(`~/projects/steamify-cachyos-dev`, `REPO=~/projects/steamify-cachyos`; see
+the steam-machine-testing skill). From the Mac:
+
+- Connect with agent forwarding (`ssh -A steammachine`), then
+  `ssh -p 2222 -o UserKnownHostsFile=~/projects/steamify-cachyos-dev/known_hosts theupriser@localhost`.
+  The Steam Machine has no key of its own: `share/host-keys.pub` holds the
+  Mac's key (`ssh-add -L`), and the VM's host key stays in `~/projects`, not
+  `~/.ssh`.
+- Inner `ssh` in a `bash -s` heredoc reads the rest of the heredoc as its
+  stdin: use `ssh -n` for single commands, or the rest of the script silently
+  never runs.
+- Start the VM as a user unit so it survives the SSH session:
+  `systemd-run --user --collect -u steamify-vm --working-directory=$PWD --setenv=REPO=$HOME/projects/steamify-cachyos ./run.sh --fremont`.
+- A fresh install has no `/media`: the guest setup is
+  `sudo mkdir -p /media && sudo mount -t 9p -o trans=virtio,version=9p2000.L vmtools /media && /media/guest-ssh-setup.sh`.
 
 ## Quick start (the usual loop)
 
@@ -130,6 +166,46 @@ ssh -p 2222 -o BatchMode=yes theupriser@localhost bash -s << 'EOF'
 echo "$HOME"
 EOF
 ```
+
+## Visible terminal (let the user watch)
+
+When the user watches the VM's window, run commands in a Konsole window on
+the guest's desktop instead of hidden over SSH: they see every command and
+its output. A tmux session makes that window scriptable (needs a Plasma
+session; `sudo pacman -S --needed tmux` once, or put it in the snapshot).
+
+```bash
+ssh -p 2222 -o BatchMode=yes theupriser@localhost bash -s << 'EOF'
+export XDG_RUNTIME_DIR=/run/user/1000 WAYLAND_DISPLAY=wayland-0 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus
+tmux kill-session -t claude 2>/dev/null
+# Plain bash, not fish: fish rejects bash syntax ($?) and swallows Enter
+# keys sent while it's still drawing its prompt.
+tmux new-session -d -s claude -x 200 -y 50 'bash --norc --noprofile -i'; sleep 1
+tmux send-keys -t claude "PS1='[claude] \\w\\$ '; clear" Enter
+systemd-run --user -q --setenv=XDG_CURRENT_DESKTOP=KDE konsole --separate -e tmux attach -t claude
+EOF
+```
+
+Run a command and wait for it: end it with a marker, then poll the pane.
+
+```bash
+ssh -p 2222 -o BatchMode=yes theupriser@localhost bash -s << 'EOF'
+tmux send-keys -t claude "clear; cd /mnt; printf 'q\\n' | ./steamify.sh; echo '== EXIT'" Enter
+for i in $(seq 200); do tmux capture-pane -p -t claude -S -400 | grep -q '^== EXIT' && break; sleep 3; done
+tmux capture-pane -p -t claude -S -400 | grep -v '^\s*$' | tail -30
+EOF
+```
+
+- `clear` first, or an old marker still in the pane ends the wait at once;
+  with several runs, count the markers (`grep -c`).
+- Longer scripts: write them to a file in the heredoc (not `/tmp` if a
+  reboot comes in between), then `tmux send-keys -t claude 'clear; bash <file>' Enter`.
+- For long runs (packages, yay, DKMS), poll from a `run_in_background` Bash
+  call and report when it finishes.
+- A reboot or snapshot restore ends the session and the window: set it up
+  again before sending anything, or `send-keys` fails
+  (`error connecting to /tmp/tmux-1000/default`) while a wait loop spins.
+- `vmshot.sh --clean` closes Konsole windows, including this one.
 
 ## Getting a Plasma session
 
@@ -371,6 +447,12 @@ directly over SSH lack the session's Qt platform theme and look light; start
 them with `systemd-run --user <app>`.
 
 ## Pitfalls
+
+- To see the plan without applying it, answer "n" at "Go ahead?"
+  (`'\nn\nq\n'`); a "y" applies it. Never wrap a run that may call pacman in
+  `timeout`: killing pacman after its transaction but before its hooks leaves
+  a stale boot entry and `db.lck` (restore the snapshot, or remove the lock
+  and reinstall the same packages so the hooks run).
 
 - After a reboot or hard restart the autologin may be back on gamescope
   (black screen): `sudo /usr/lib/steamos/steam-set-session plasma.desktop &&

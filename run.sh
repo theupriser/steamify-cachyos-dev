@@ -33,9 +33,13 @@ for arg in "$@"; do
     esac
 done
 
+# UEFI firmware: Ubuntu's path, or Arch's (edk2-ovmf).
+ovmf=/usr/share/OVMF; ovmf_code=OVMF_CODE_4M.fd; ovmf_vars=OVMF_VARS_4M.fd
+[[ -f "$ovmf/$ovmf_code" ]] || { ovmf=/usr/share/edk2/x64; ovmf_code=OVMF_CODE.4m.fd; ovmf_vars=OVMF_VARS.4m.fd; }
+
 # First run: create the disk and the writable UEFI variable store.
 [[ -f disk.qcow2 ]] || qemu-img create -f qcow2 disk.qcow2 60G
-[[ -f vars.fd ]] || cp /usr/share/OVMF/OVMF_VARS_4M.fd vars.fd
+[[ -f vars.fd ]] || cp "$ovmf/$ovmf_vars" vars.fd
 
 # Hand the host's public keys to the guest setup script.
 cat ~/.ssh/*.pub > share/host-keys.pub
@@ -43,7 +47,7 @@ cat ~/.ssh/*.pub > share/host-keys.pub
 exec qemu-system-x86_64 \
     -enable-kvm -machine q35,memory-backend=mem -cpu host -smp 6 -m 8G \
     -object memory-backend-memfd,id=mem,size=8G,share=on \
-    -drive if=pflash,format=raw,readonly=on,file=/usr/share/OVMF/OVMF_CODE_4M.fd \
+    -drive if=pflash,format=raw,readonly=on,file="$ovmf/$ovmf_code" \
     -drive if=pflash,format=raw,file=vars.fd \
     -drive file=disk.qcow2,if=virtio \
     -device "$gpu" -display gtk,gl=on,zoom-to-fit=off \
