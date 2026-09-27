@@ -74,7 +74,9 @@ systemd-run --user --collect -q -u isobuild-$(date +%s) --working-directory=$PWD
    > $HOME/projects/iso-build.log 2>&1"
 ```
 
-Output: `out/desktop/*.iso`. Each flag fixes a failure seen before:
+Output: `out/desktop/*.iso` (~3.2 GB, ~10 min). The build ends with
+`chown: missing operand` + `ERROR: An unknown error`: harmless, buildiso.sh
+chowns to `$SUDO_USER`, unset as root; the ISO is already written. Each flag fixes a failure seen before:
 
 - `--network=host`: the default network has no DNS here (every mirror
   "Resolving timed out").
@@ -114,8 +116,10 @@ First desktop login as that user:
 
 ## Testing the ISO itself
 
-Install the built ISO in a **new** VM disk (never over the ssh-ready one),
-with `--fremont`, through Calamares, then check
+Install the built ISO in a **new** VM (`~/projects/iso-vm`: copy of run.sh,
+`share` symlink, `cachyos.iso` symlink to the build, own disk/vars; power the
+test VM off first, both use port 2222; `run.sh install --fremont` as a user
+unit), through Calamares, then check
 `/var/log/steamify-install.log` in the installed system. In the chroot
 `uname -r` is the live kernel: module loads and checks against the running
 kernel may fail even when DKMS built for the installed kernels. Real
