@@ -17,11 +17,11 @@ setup during the install. Two repos:
   next to CachyOS Hello). See AGENTS.md there.
 - `steammachine-cachyos-live-iso` (fork of CachyOS-Live-ISO), branch work
   never on master:
-  - `archiso/airootfs/etc/calamares/settings.conf`: CachyOS's own (from the
-    `cachyos-calamares-next` package, `/usr/share/calamares/settings.conf`;
-    `/etc/calamares` wins) with `shellprocess@steamify` before
-    `cleanup_calamares`. Refresh it from the package when CachyOS changes
-    theirs.
+  - `archiso/airootfs/usr/local/bin/calamares-online.sh` (the installer
+    launcher) copies CachyOS's `settings_online.conf` over
+    `/etc/calamares/settings.conf` on every start, so a shipped settings.conf
+    is lost: it `sed`s `shellprocess@steamify` (+ its instance) in before
+    `cleanup_calamares` right after that copy.
   - `modules/shellprocess_steamify.conf` runs
     `/usr/local/bin/steamify-install ${ROOT} ${USER}` outside the chroot; that
     gives the user a temporary NOPASSWD rule, runs the bundle with
