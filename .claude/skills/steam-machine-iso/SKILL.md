@@ -87,7 +87,8 @@ chowns to `$SUDO_USER`, unset as root; the ISO is already written. Each flag fix
 - `pacman-key --init/--populate`: the image's keyring isn't initialised.
 - The retry with `-c` keeps the work dir and cache for a flaky pass.
 
-Don't stop a running build to try something else without checking its log
+Never start a build while one runs (`sudo podman ps`): both use `build/`
+and `out/`, and `rm -rf build out` breaks the running one. Don't stop a running build to try something else without checking its log
 first (`grep -ac GPGME ~/projects/iso-build.log`). The repo's CI recipe
 (`archlinux:base-devel`, `.github/workflows/build.yml`) works too but pulls
 from one slow mirror.
