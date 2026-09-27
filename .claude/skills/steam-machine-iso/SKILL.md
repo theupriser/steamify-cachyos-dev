@@ -70,11 +70,13 @@ sudo rm -rf build out
 systemd-run --user --collect -q -u isobuild-$(date +%s) --working-directory=$PWD bash -c \
   "sudo podman run --rm -t --pids-limit=-1 --ulimit nofile=65536:65536 --privileged --network=host \
      -v $PWD:/iso -w /iso docker.io/cachyos/cachyos:latest bash -c \
-     'pacman-key --init && pacman-key --populate && pacman -Syu --noconfirm --needed archiso mkinitcpio-archiso git squashfs-tools grub sudo && { ./buildiso.sh -p desktop -w || ./buildiso.sh -p desktop -c -w; }' \
+     'pacman-key --init && pacman-key --populate && pacman -Syu --noconfirm --needed archiso mkinitcpio-archiso git squashfs-tools grub sudo && ./build-live-modules.sh && { ./buildiso.sh -p desktop -w || ./buildiso.sh -p desktop -c -w; }' \
    > $HOME/projects/iso-build.log 2>&1"
 ```
 
-Output: `out/desktop/*.iso` (~3.2 GB, ~10 min). The build ends with
+`build-live-modules.sh` builds the power-off fix for the ISO's kernels
+(live session; needs the source steamify-prepare.sh puts on the ISO).
+Output: `out/desktop/steamify-cachyos-*.iso` (~3.2 GB, ~10 min). The build ends with
 `chown: missing operand` + `ERROR: An unknown error`: harmless, buildiso.sh
 chowns to `$SUDO_USER`, unset as root; the ISO is already written. Each flag fixes a failure seen before:
 
