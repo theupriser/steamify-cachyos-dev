@@ -125,3 +125,16 @@ unit), through Calamares, then check
 kernel may fail even when DKMS built for the installed kernels. Real
 hardware (Steam Machine, USB stick) is the final test: gamescope, LEDs, CEC,
 power-off.
+
+## Live-session quirks
+
+- Copy/paste doesn't reach QEMU over Moonlight: type commands with
+  `python3 scripts/qmptype.py <vm dir>/qmp.sock "<command>"` (US layout, adds
+  Enter; the VM window's terminal must have focus). QMP `screendump` gives "no
+  surface" with virgl: screenshot the Steam Machine's desktop instead
+  (`spectacle -b -n -f -o /tmp/host.png` in its session).
+- CachyOS Hello refuses to start the installer on a self-built ISO ("testing
+  ISO"): run `calamares-online.sh` in Konsole.
+- `cachyos-calamares-next 3.4.2-13` needs `libboost_*.so.1.91.0` while the
+  repos ship Boost 1.92: steamify-prepare.sh puts 1.91's libraries on the ISO
+  (from archive.archlinux.org) until CachyOS rebuilds it.
