@@ -4,6 +4,12 @@ All notable changes, per version and per commit. Versions follow
 [Semantic Versioning](https://semver.org/) and were numbered from the start
 of the history.
 
+## 0.3.0 - 2026-09-27
+
+The Steam Machine ISO and Steamify's install-time mode.
+
+- **feat: steam-machine-iso skill (ISO build in podman on the Steam Machine, installer simulation, first-login test) and scripts/vminstallsim.sh**
+
 ## 0.2.0 - 2026-09-24
 
 Watchable test runs and the lessons from testing cachyos-gamescope-boot 0.7.0
