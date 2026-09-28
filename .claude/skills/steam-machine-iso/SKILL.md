@@ -126,10 +126,17 @@ git checkout feat/steamify && ./steamify-prepare.sh ~/projects/steamify-cachyos
 sudo rm -rf build out
 systemd-run --user --collect -q -u isobuild-$(date +%s) --working-directory=$PWD bash -c \
   "sudo podman run --rm -t --pids-limit=-1 --ulimit nofile=65536:65536 --privileged --network=host \
+     -v $HOME/projects/iso-cache:/var/cache/pacman/pkg \
      -v $PWD:/iso -w /iso docker.io/cachyos/cachyos:latest bash -c \
      'pacman-key --init && pacman-key --populate && pacman -Syu --noconfirm --needed archiso mkinitcpio-archiso git squashfs-tools grub sudo && ./build-live-modules.sh && ./build-calamares-modules.sh && { ./buildiso.sh -p desktop -w || ./buildiso.sh -p desktop -c -w; }' \
    > $HOME/projects/iso-build.log 2>&1"
 ```
+
+`-v ~/projects/iso-cache:/var/cache/pacman/pkg` keeps the downloaded packages
+(~3 GB) between builds (`mkdir -p ~/projects/iso-cache` once): the container's
+own tools and mkarchiso's `pacstrap -c` both use that cache, so only updated
+packages are downloaded. Clear it with `sudo rm -rf ~/projects/iso-cache/*`
+if it grows too large.
 
 `build-calamares-modules.sh` builds Calamares' `packagechooserq` (the Steamify
 page's module; CachyOS's package leaves it out) from CachyOS's Calamares
