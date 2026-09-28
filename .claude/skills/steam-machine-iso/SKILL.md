@@ -124,10 +124,14 @@ an earlier run's single user mode edits the skel layout, and the theme then
 
 First desktop login as that user:
 
-1. Point the first-login script at the test copy (it runs the newest
-   release otherwise): copy `/mnt` to `/opt/steamify-test` (`chmod -R a+rX`),
-   `sed -i 's#^curl .*#bash /opt/steamify-test/steamify.sh --first-login#'`
-   `/home/isotest/.local/share/steamify/bin/first-login`.
+1. The first-login step (`~/.local/share/steamify/bin/first-login`, removes
+   itself) starts the app through `run-app`, which always downloads the
+   newest *release* (`releases/latest/download/steamify-app.sh`): before a
+   release that shows the old version. For the branch's app, start it by
+   hand afterwards as that user: copy `/mnt` to `/opt/steamify-test`
+   (`chmod -R a+rX`), then `sudo -u isotest XDG_RUNTIME_DIR=/run/user/1001
+   DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1001/bus systemd-run --user
+   /opt/steamify-test/ui/steamify-ui`.
 2. Gamescope doesn't run in the VM: `Session=plasma.desktop` in
    `/etc/sddm.conf.d/zz-steamos-autologin.conf`, remove
    `/etc/plasmalogin.conf.d/00-test-autologin.conf`, reboot.
