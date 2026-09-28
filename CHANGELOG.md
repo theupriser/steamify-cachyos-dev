@@ -4,11 +4,37 @@ All notable changes, per version and per commit. Versions follow
 [Semantic Versioning](https://semver.org/) and were numbered from the start
 of the history.
 
+## 0.4.0 - 2026-09-28
+
+An unattended VM install, a test plan, and the lessons from testing
+Steamify 2.7.0.
+
+- **feat: scripts/vminstall.sh installs an ssh-ready test VM unattended; TESTPLAN.md; vm-install skill**
+  - `scripts/vminstall.sh [--force] [--iso <file>] [--fremont]`: CachyOS from
+    the ISO's headless `cachyos-installer` (kernel booted directly with
+    `systemd.run=` + `systemd.wants=`, files and log over
+    `scripts/vminstall-server.py`), then `share/vminstall-post.sh`: sshd,
+    passwordless sudo, test autologin, Limine `default_entry`. Snapshots
+    `clean` and `ssh-ready`. User: the host's username, password `steamify`;
+    key `~/.ssh/steamify-vm_ed25519` (made once, never overwritten).
+  - `scripts/common.sh`: `VM_DIR`, and the VM's user, key and known_hosts from
+    it; `run.sh`: `VM_ISO`, `VM_KERNEL`/`VM_INITRD`/`VM_APPEND`, `VM_SERIAL`,
+    `repo-path`.
+  - `scripts/steammachine-addkey.sh`: the VM key on the Steam Machine too.
+  - `TESTPLAN.md`: regression, the app, features per release, Steam Machine
+    hardware (faked and real), results log. `scripts/qmpkey.py` presses keys
+    in the VM (drives the app).
+  - Fixes: `vmreset.sh` doesn't restart plasmalogin when the snapshot already
+    logged in (HELPER_TTY_ERROR); `vmstate.sh` reads `~/.local/state/steamify`;
+    `vminstallsim.sh` passes `LANG=C.UTF-8` like the ISO.
+  - Skills: update `ssh-ready` at the start of every session; the ISO is built
+    in the test VM.
+
 ## 0.3.0 - 2026-09-27
 
 The Steam Machine ISO and Steamify's install-time mode.
 
-- **feat: steam-machine-iso skill (ISO build in podman on the Steam Machine, installer simulation, first-login test) and scripts/vminstallsim.sh**
+- `f8e2473` **feat: steam-machine-iso skill (ISO build in podman on the Steam Machine, installer simulation, first-login test) and scripts/vminstallsim.sh**
 
 ## 0.2.0 - 2026-09-24
 

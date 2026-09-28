@@ -69,6 +69,43 @@ the steam-machine-testing skill). From the Mac:
 - A fresh install has no `/media`: the guest setup is
   `sudo mkdir -p /media && sudo mount -t 9p -o trans=virtio,version=9p2000.L vmtools /media && /media/guest-ssh-setup.sh`.
 
+## No VM yet
+
+Create one with `scripts/vminstall.sh` (the vm-install skill): unattended,
+ends with the snapshots `clean` and `ssh-ready`. Pass its `VM_DIR` to every
+script. Login by hand: your host username, password `steamify`.
+
+## Test plan
+
+`TESTPLAN.md` (repo root) lists what to test per release (regression,
+features, Steam Machine only) and logs every run. Follow it, add a section
+for every new feature, and add a line to its results log after each run.
+
+## Start of every session: update the snapshot first
+
+A snapshot's package databases age quickly: the mirrors drop the versions it
+knows (404s, then "signature is invalid" on partial downloads) and the
+conversion's package install fails, which looks like a wizard bug. So once
+per session, before any test, bring `ssh-ready` up to date and overwrite it
+(visibly, in a Konsole on the VM's desktop):
+
+```bash
+scripts/vmreset.sh --fremont
+# in the guest (Konsole): keyrings first, then everything else
+sudo pacman -Sy --noconfirm archlinux-keyring cachyos-keyring
+sudo pacman -Su --noconfirm --needed tmux shellcheck
+sudo pacman -Scc --noconfirm
+sudo systemctl poweroff
+# on the host, in the VM dir, once QEMU is gone:
+qemu-img snapshot -d ssh-ready disk.qcow2
+qemu-img snapshot -c ssh-ready disk.qcow2 && cp vars.fd vars.ssh-ready.fd
+```
+
+Keep `/etc/plasmalogin.conf.d/00-test-autologin.conf` in the snapshot: the
+VM then logs in at boot. After a plasmalogin update, restarting it from a
+booted greeter fails (`HELPER_TTY_ERROR`, start-limit-hit), so `vmreset.sh`
+only restarts it when Plasma isn't up yet.
+
 ## Quick start (the usual loop)
 
 ```bash
@@ -126,7 +163,8 @@ qemu-img snapshot -c my-state disk.qcow2 && cp vars.fd vars.my-state.fd       # 
 ```
 
 Existing snapshots: `clean` (fresh install) and `ssh-ready` (sshd + host key +
-passwordless sudo). Reset to `ssh-ready` before each full test run.
+passwordless sudo, test autologin; brought up to date at the start of each
+session, see above). Reset to `ssh-ready` before each full test run.
 
 ## First-time guest setup
 

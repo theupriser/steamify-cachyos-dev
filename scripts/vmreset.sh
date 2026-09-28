@@ -9,10 +9,6 @@
 #      VM_LOG (QEMU output, default $VM_DIR/vm.log).
 set -euo pipefail
 . "$(dirname "$0")/common.sh"
-repo="$(cd "$(dirname "$0")/.." && pwd)"
-if [[ -z "${VM_DIR:-}" ]]; then
-    if [[ -f "$repo/disk.qcow2" ]]; then VM_DIR="$repo"; else VM_DIR="$HOME/vms/cachyos-test"; fi
-fi
 SNAPSHOT="${SNAPSHOT:-ssh-ready}"
 VM_LOG="${VM_LOG:-$VM_DIR/vm.log}"
 
@@ -37,7 +33,10 @@ vm_ssh bash -s << 'REMOTE'
 sudo mount -t 9p -o trans=virtio,version=9p2000.L repo /mnt
 sudo mkdir -p /etc/plasmalogin.conf.d
 printf '[Autologin]\nUser=%s\nSession=plasma.desktop\n' "$USER" | sudo tee /etc/plasmalogin.conf.d/00-test-autologin.conf >/dev/null
-sudo systemctl restart plasmalogin
+# Snapshots with the autologin file log in at boot; restarting plasmalogin
+# then fails (HELPER_TTY_ERROR on tty1) and leaves the greeter.
+for _ in $(seq 10); do pgrep -u "$USER" -x plasmashell >/dev/null && break; sleep 3; done
+pgrep -u "$USER" -x plasmashell >/dev/null || { sudo systemctl reset-failed plasmalogin; sudo systemctl restart plasmalogin; }
 for _ in $(seq 40); do pgrep -u "$USER" -x plasmashell >/dev/null && break; sleep 3; done
 sleep 10
 # Windows the snapshot opens at login would cover the screenshots.

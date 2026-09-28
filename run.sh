@@ -7,6 +7,9 @@
 #     --amd      with --vulkan: venus on the host AMD iGPU (RADV) instead of NVIDIA
 #     --fremont  report the Valve Steam Machine's DMI data (for testing the wizard)
 # REPO defaults to $HOME/projects/cachyos-gamescope-boot.
+# VM_ISO=<path> boots that ISO for `install` instead of cachyos.iso; with
+# VM_KERNEL/VM_INITRD/VM_APPEND its kernel is booted directly with those
+# parameters (scripts/vminstall.sh, the unattended install).
 # BIOS_VERSION=F7F0107 makes the guest report that BIOS version (DMI), e.g.
 # to test the wizard's BIOS update item; the firmware itself doesn't change.
 # The repo is shared into the guest; mount it there with:
@@ -15,15 +18,23 @@
 #   sudo mount -t 9p -o trans=virtio,version=9p2000.L vmtools /media && /media/guest-ssh-setup.sh
 # SSH from the host: ssh -p 2222 <user>@localhost
 cd "$(dirname "$0")"
+# REPO: from the environment, else what scripts/vminstall.sh recorded next
+# to the disk (repo-path), else the old default.
+[[ -z "${REPO:-}" && -f repo-path ]] && REPO="$(cat repo-path)"
 repo="${REPO:-$HOME/projects/cachyos-gamescope-boot}"
 
 cdrom=()
+direct=()
+[[ -n "${VM_KERNEL:-}" ]] && direct=(-kernel "$VM_KERNEL" -initrd "$VM_INITRD" -append "$VM_APPEND")
+# VM_SERIAL=<file>: the guest's serial console (console=ttyS0) logged into
+# that file, and reachable as a socket next to it (<file>.sock) to type into.
+[[ -n "${VM_SERIAL:-}" ]] && direct+=(-chardev "socket,id=ser0,path=$VM_SERIAL.sock,server=on,wait=off,logfile=$VM_SERIAL" -serial chardev:ser0)
 smbios=()
 gpu=virtio-vga-gl,xres=1920,yres=1080
 [[ -n "${BIOS_VERSION:-}" ]] && smbios+=(-smbios "type=0,version=$BIOS_VERSION")
 for arg in "$@"; do
     case "$arg" in
-        install)  cdrom=(-cdrom cachyos.iso -boot d) ;;
+        install)  cdrom=(-cdrom "${VM_ISO:-cachyos.iso}" -boot d) ;;
         --nvidia) export __NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia \
                          __EGL_VENDOR_LIBRARY_FILENAMES=/usr/share/glvnd/egl_vendor.d/10_nvidia.json ;;
         --vulkan) gpu+=,hostmem=4G,blob=true,venus=true ;;
@@ -56,4 +67,4 @@ exec qemu-system-x86_64 \
     -virtfs local,path="$repo",mount_tag=repo,security_model=mapped-xattr \
     -virtfs local,path="$PWD/share",mount_tag=vmtools,security_model=mapped-xattr,readonly=on \
     -qmp unix:"$PWD/qmp.sock",server=on,wait=off \
-    "${smbios[@]}" "${cdrom[@]}"
+    "${smbios[@]}" "${cdrom[@]}" "${direct[@]}"

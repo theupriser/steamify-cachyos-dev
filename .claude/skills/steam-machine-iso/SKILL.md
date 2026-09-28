@@ -1,6 +1,6 @@
 ---
 name: steam-machine-iso
-description: Use when working on the Steam Machine CachyOS ISO (repo steammachine-cachyos-live-iso) or Steamify's install-time mode (steamify.sh --defaults, --first-login) - building the ISO in podman on the Steam Machine, the Calamares Steamify step, simulating the installer in the test VM, and testing the first desktop login.
+description: Use when working on the Steam Machine CachyOS ISO (repo steammachine-cachyos-live-iso) or Steamify's install-time mode (steamify.sh --defaults, --first-login) - building the ISO in podman (in the test VM, or on the Steam Machine), the Calamares Steamify step, simulating the installer in the test VM, and testing the first desktop login.
 ---
 
 # Steam Machine ISO and Steamify's install-time mode
@@ -56,6 +56,26 @@ ssh steammachine bash -c "'export XDG_RUNTIME_DIR=/run/user/1000 DBUS_SESSION_BU
   `PATH` and `SSH_AUTH_SOCK` (connect with `ssh -A`, keep the session open with
   `--wait`). Without KillMode=process QEMU dies with the unit; without REPO
   QEMU fails on the old repo path and the script waits 5 minutes for SSH.
+
+## Building the ISO in the test VM (preferred)
+
+The build needs no real hardware: run it in the test VM (CachyOS; create it
+with the vm-install skill), not on the Steam Machine. Not tried yet in the
+VM: note what differs here. In the VM (`vm_ssh`, visibly in a Konsole there):
+
+```bash
+sudo pacman -S --needed --noconfirm podman git
+git clone https://github.com/theupriser/steammachine-cachyos-live-iso ~/projects/steammachine-cachyos-live-iso
+sudo mount -t 9p -o trans=virtio,version=9p2000.L repo /mnt     # the Steamify checkout (REPO)
+cd ~/projects/steammachine-cachyos-live-iso && git checkout feat/steamify && ./steamify-prepare.sh /mnt
+```
+
+then the same `podman run` as below (paths in the VM; `~/projects/iso-build.log`).
+The ISO (~3.2 GB) fits the 60G disk; copy it out with
+`vm_scp "$VM_USER@$VM_HOST:~/projects/steammachine-cachyos-live-iso/out/desktop/*.iso" .`
+(`scripts/common.sh`), then install it with `scripts/vminstall.sh --iso`.
+Give the VM more room with a bigger disk if `out/`, `build/` and the package
+cache grow over several builds (`sudo rm -rf build out` between builds).
 
 ## Building the ISO (podman on the Steam Machine)
 
@@ -118,6 +138,11 @@ First desktop login as that user:
    `sudo -u isotest env XDG_RUNTIME_DIR=/run/user/1001 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1001/bus WAYLAND_DISPLAY=wayland-0 spectacle -b -n -f -o /tmp/shot.png`.
 
 ## Testing the ISO itself
+
+Unattended: `VM_DIR=~/projects/iso-vm scripts/vminstall.sh --iso <built iso> --fremont`
+(vm-install skill) installs it with the ISO's headless `cachyos-installer`;
+Calamares and its Steamify step don't run then, so run `steamify-install`
+from the live script for that part. Through Calamares by hand, as below.
 
 Install the built ISO in a **new** VM (`~/projects/iso-vm`: copy of run.sh,
 `share` symlink, `cachyos.iso` symlink to the build, own disk/vars; power the

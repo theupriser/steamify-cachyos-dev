@@ -25,5 +25,5 @@ sleep 2
 systemd-run --user --wait -q spectacle -b -n -f -o /tmp/vmshot.png
 REMOTE
 } | vm_ssh bash -s
-scp -q -P "$VM_PORT" "$VM_USER@$VM_HOST:/tmp/vmshot.png" "$out"
+vm_scp "$VM_USER@$VM_HOST:/tmp/vmshot.png" "$out"
 echo "$out"
