@@ -56,6 +56,9 @@ ssh steammachine bash -c "'pgrep -f \"tail -n 50 -F\" >/dev/null || { export XDG
   `/tmp/steamify-sshwrap/ssh` =
   `exec /usr/bin/ssh -o UserKnownHostsFile=$HOME/projects/steamify-cachyos-dev/known_hosts -o StrictHostKeyChecking=accept-new "$@"`
   (recreate after a reboot).
+- `vmreset.sh` shuts down *any* running QEMU (it checks `pgrep ^qemu-system`),
+  including the ISO VM with someone's live session: ask before resetting the
+  test VM while the ISO VM runs.
 - Run vmreset.sh as a systemd user unit with `-p KillMode=process`, a unique
   unit name, `--setenv=REPO=$HOME/projects/steamify-cachyos`, the wrapper
   `PATH` and `SSH_AUTH_SOCK` (connect with `ssh -A`, keep the session open with
