@@ -36,8 +36,13 @@ setup during the install. Two repos:
 The user watches the Steam Machine over Moonlight: run builds and tests in a
 Konsole on its desktop (or open one that follows the log), never hidden.
 
+Open that Konsole only when none follows the log yet: `tail -F` picks up
+each new build's log by itself, so one window serves every build (check with
+`pgrep -af "tail -n 50 -F"` on the Steam Machine; never `pkill -f` that
+pattern from a remote command, it kills its own shell).
+
 ```bash
-ssh steammachine bash -c "'export XDG_RUNTIME_DIR=/run/user/1000 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus; systemd-run --user -q konsole --hold -e bash -c \"tail -n 50 -F ~/projects/iso-build.log\"'"
+ssh steammachine bash -c "'pgrep -f \"tail -n 50 -F\" >/dev/null || { export XDG_RUNTIME_DIR=/run/user/1000 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus; systemd-run --user -q konsole --hold -e bash -c \"tail -n 50 -F ~/projects/iso-build.log\"; }'"
 ```
 
 ## Steam Machine gotchas
