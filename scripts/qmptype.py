@@ -8,7 +8,8 @@ cmd({"execute": "qmp_capabilities"})
 plain = {" ": "spc", "/": "slash", ".": "dot", "-": "minus", "'": "apostrophe", "\n": "ret",
          "=": "equal", ",": "comma", ";": "semicolon", "\\": "backslash", "[": "bracket_left", "]": "bracket_right"}
 shifted = {"&": "7", "*": "8", "_": "minus", ":": "semicolon", "|": "backslash", "~": "grave_accent",
-           "!": "1", "@": "2", "#": "3", "$": "4", "%": "5", "^": "6", "(": "9", ")": "0", "+": "equal", '"': "apostrophe"}
+           "!": "1", "@": "2", "#": "3", "$": "4", "%": "5", "^": "6", "(": "9", ")": "0", "+": "equal", '"': "apostrophe",
+           ">": "dot", "<": "comma", "?": "slash", "{": "bracket_left", "}": "bracket_right"}
 for ch in text + "\n":
     keys = []
     if ch.isalpha():
