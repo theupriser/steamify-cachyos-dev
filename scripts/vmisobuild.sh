@@ -1,6 +1,6 @@
 #!/bin/bash
 # Build the Steam Machine ISO (steammachine-cachyos-live-iso) in the test VM
-# (directly, no container: build-live-modules.sh with sudo, buildiso.sh as
+# (directly, no container: build-live-modules.sh and build-calamares-modules.sh with sudo, buildiso.sh as
 # the user, it sudos itself),
 # visibly (a Konsole on the VM's desktop follows the log), with the package
 # downloads cached on the host, and copy the ISO back.
@@ -50,7 +50,7 @@ sudo rm -rf build out
 cat > ~/projects/iso-build.sh << S
 #!/bin/bash
 cd $iso
-sudo ./build-live-modules.sh && { ./buildiso.sh -p desktop -w || ./buildiso.sh -p desktop -c -w; }
+sudo ./build-live-modules.sh && sudo ./build-calamares-modules.sh && { ./buildiso.sh -p desktop -w || ./buildiso.sh -p desktop -c -w; }
 echo "== BUILD EXIT \$?"
 ls -la out/desktop/*.iso 2>/dev/null
 S
