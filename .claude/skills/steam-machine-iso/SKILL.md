@@ -274,3 +274,20 @@ lot of tokens per image. Prefer cheap, text-only signals instead:
   Probe with a symbol-free command (`echo test123`) after any
   language/keyboard step, and fix the layout from the live session's own
   settings before typing paths or shell syntax again.
+
+## Reading an installed VM's disk (no screenshots)
+
+Also while the VM runs, read-only, without touching it:
+
+```bash
+sudo modprobe nbd max_part=8
+sudo qemu-nbd -r -c /dev/nbd0 --image-opts driver=qcow2,force-share=on,file.driver=file,file.filename=$PWD/disk.qcow2
+sudo mount -o ro,rescue=nologreplay,subvol=@log /dev/nbd0p2 /mnt/x   # logs; subvol=@ for the rest
+sudo cat /mnt/x/steamify-install.log
+sudo umount /mnt/x; sudo qemu-nbd -d /dev/nbd0
+```
+
+(`qemu-nbd -U` doesn't exist here; `force-share=on` in `--image-opts` does
+the same.) For a running live session, start the VM with `VM_SERIAL=<file>`
+and end typed commands with `| sudo tee /dev/ttyS0`: the output lands in
+that file as text.
