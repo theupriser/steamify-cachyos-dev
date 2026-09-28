@@ -10,6 +10,8 @@
 # VM_ISO=<path> boots that ISO for `install` instead of cachyos.iso; with
 # VM_KERNEL/VM_INITRD/VM_APPEND its kernel is booted directly with those
 # parameters (scripts/vminstall.sh, the unattended install).
+# VM_CPUS=<n>: guest CPUs (6); ISO builds use all host cores but 2.
+# VM_PORT=<n>: the host port for the guest's SSH (2222), e.g. a second VM.
 # BIOS_VERSION=F7F0107 makes the guest report that BIOS version (DMI), e.g.
 # to test the wizard's BIOS update item; the firmware itself doesn't change.
 # The repo is shared into the guest; mount it there with:
@@ -26,11 +28,18 @@ repo="${REPO:-$HOME/projects/cachyos-gamescope-boot}"
 cdrom=()
 direct=()
 [[ -n "${VM_KERNEL:-}" ]] && direct=(-kernel "$VM_KERNEL" -initrd "$VM_INITRD" -append "$VM_APPEND")
+# VM_CACHE=<host dir>: shared read-write as 9p tag `cache` (the ISO build's
+# package cache, scripts/vmisobuild.sh; one per VM, e.g. $VM_DIR/iso-cache),
+# so snapshot resets don't lose it.
+[[ -n "${VM_CACHE:-}" ]] && { mkdir -p "$VM_CACHE"; direct+=(-virtfs "local,path=$VM_CACHE,mount_tag=cache,security_model=mapped-xattr"); }
 # VM_SERIAL=<file>: the guest's serial console (console=ttyS0) logged into
 # that file, and reachable as a socket next to it (<file>.sock) to type into.
 [[ -n "${VM_SERIAL:-}" ]] && direct+=(-chardev "socket,id=ser0,path=$VM_SERIAL.sock,server=on,wait=off,logfile=$VM_SERIAL" -serial chardev:ser0)
 smbios=()
-gpu=virtio-vga-gl,xres=1920,yres=1080
+gpu=virtio-vga-gl,xres=1920,yres=1080 gl=on
+# VM_NOGL=1: no virgl (software rendering in the guest), so QMP screendump
+# works (scripts/qmpshot.py); for the live ISO and Calamares.
+[[ -n "${VM_NOGL:-}" ]] && { gpu=virtio-vga,xres=1920,yres=1080; gl=off; }
 [[ -n "${BIOS_VERSION:-}" ]] && smbios+=(-smbios "type=0,version=$BIOS_VERSION")
 for arg in "$@"; do
     case "$arg" in
@@ -56,14 +65,14 @@ ovmf=/usr/share/OVMF; ovmf_code=OVMF_CODE_4M.fd; ovmf_vars=OVMF_VARS_4M.fd
 cat ~/.ssh/*.pub > share/host-keys.pub
 
 exec qemu-system-x86_64 \
-    -enable-kvm -machine q35,memory-backend=mem -cpu host -smp 6 -m 8G \
+    -enable-kvm -machine q35,memory-backend=mem -cpu host -smp "${VM_CPUS:-6}" -m 8G \
     -object memory-backend-memfd,id=mem,size=8G,share=on \
     -drive if=pflash,format=raw,readonly=on,file="$ovmf/$ovmf_code" \
     -drive if=pflash,format=raw,file=vars.fd \
     -drive file=disk.qcow2,if=virtio \
-    -device "$gpu" -display gtk,gl=on,zoom-to-fit=off \
+    -device "$gpu" -display gtk,gl=$gl,zoom-to-fit=off \
     -device qemu-xhci -device usb-tablet \
-    -nic user,model=virtio-net-pci,hostfwd=tcp::2222-:22 \
+    -nic user,model=virtio-net-pci,hostfwd=tcp::${VM_PORT:-2222}-:22 \
     -virtfs local,path="$repo",mount_tag=repo,security_model=mapped-xattr \
     -virtfs local,path="$PWD/share",mount_tag=vmtools,security_model=mapped-xattr,readonly=on \
     -qmp unix:"$PWD/qmp.sock",server=on,wait=off \
