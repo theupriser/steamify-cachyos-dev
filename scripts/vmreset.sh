@@ -9,6 +9,7 @@
 #      VM_LOG (QEMU output, default $VM_DIR/vm.log).
 set -euo pipefail
 . "$(dirname "$0")/common.sh"
+repo_dir="$(cd "$(dirname "$0")/.." && pwd)"
 SNAPSHOT="${SNAPSHOT:-ssh-ready}"
 VM_LOG="${VM_LOG:-$VM_DIR/vm.log}"
 
@@ -21,6 +22,8 @@ fi
 
 echo "Restoring snapshot '$SNAPSHOT' in $VM_DIR..."
 cd "$VM_DIR"
+# Always this repo's run.sh: a copy in $VM_DIR falls behind (VM_CACHE, ...).
+cp "$repo_dir/run.sh" run.sh
 qemu-img snapshot -a "$SNAPSHOT" disk.qcow2
 cp "vars.$SNAPSHOT.fd" vars.fd
 

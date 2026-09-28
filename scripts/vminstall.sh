@@ -79,14 +79,14 @@ echo "ISO: $iso  key: $VM_SSH_KEY"
 # --- The ISO's kernel and initramfs, to boot it with our parameters.
 boot="$VM_DIR/iso-boot"
 mkdir -p "$boot"
-loop="$(udisksctl loop-setup -r -f "$iso" | grep -o '/dev/loop[0-9]*')"
-cleanup_loop() { udisksctl unmount -b "${loop}p1" >/dev/null 2>&1 || true; udisksctl loop-delete -b "$loop" >/dev/null 2>&1 || true; }
+loop="$(udisksctl loop-setup --no-user-interaction -r -f "$iso" | grep -o '/dev/loop[0-9]*')"
+cleanup_loop() { udisksctl unmount --no-user-interaction -b "${loop}p1" >/dev/null 2>&1 || true; udisksctl loop-delete --no-user-interaction -b "$loop" >/dev/null 2>&1 || true; }
 trap cleanup_loop EXIT
 mnt=""
 for _ in $(seq 10); do
     mnt="$(findmnt -nro TARGET "${loop}p1" 2>/dev/null || true)"
     [[ -n "$mnt" ]] && break
-    udisksctl mount -b "${loop}p1" >/dev/null 2>&1 || true; sleep 1
+    udisksctl mount --no-user-interaction -b "${loop}p1" >/dev/null 2>&1 || true; sleep 1
 done
 [[ -n "$mnt" ]] || { echo "Couldn't mount the ISO." >&2; exit 1; }
 rm -f "$boot"/*   # copied read-only from the ISO
