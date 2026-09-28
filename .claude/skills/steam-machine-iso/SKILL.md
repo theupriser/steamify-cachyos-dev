@@ -57,6 +57,40 @@ ssh steammachine bash -c "'export XDG_RUNTIME_DIR=/run/user/1000 DBUS_SESSION_BU
   `--wait`). Without KillMode=process QEMU dies with the unit; without REPO
   QEMU fails on the old repo path and the script waits 5 minutes for SSH.
 
+## Adding a Calamares page/module for Steamify: check it's real first
+
+Before writing any QML/config for a Calamares page, or building an ISO to
+test one: confirm the module type is actually installed on this Calamares
+build. A `.conf` file existing under
+`archiso/airootfs/etc/calamares/modules/` does **not** mean the module
+exists — CachyOS's branding ships some vestigial config files with no
+matching `.so`. Check in a live session (boot the ISO,
+`scripts/vmisoboot.sh`, no install needed):
+
+```bash
+ls /usr/lib/calamares/modules                    # real module types, e.g. packagechooser (not packagechooserq)
+pacman -Ql cachyos-calamares-next | grep viewmodule
+```
+
+Found on this build (2026-09-28): `packagechooserq` (arbitrary custom QML,
+`qmlFilename`) does **not exist** — only `packagechooser` does, and its
+`method: legacy` is a single-choice "pick one product" list **regardless of
+`mode: optionalmultiple`** (tested live: "Choose a product from the list.
+The selected product will be installed."). The one module confirmed to
+render real checkboxes for multiple simultaneous selections is
+**`netinstall`** (seen working on the Packages step).
+
+Test a page live, without any ISO rebuild: in the booted live session,
+edit `/etc/calamares/modules/<module>_<instance>.conf` and the matching
+module reference in `/etc/calamares/settings.conf`, then relaunch
+(`pkexec-wrapper calamares -D6`). If Calamares is already running (e.g. an
+earlier failed launch left its window open), a second launch just prints
+"Calamares is already running." — close the first window
+(Afbreken/Cancel, confirm) before relaunching. Only spend the 13+ minute
+ISO build once the page's module and rendering are confirmed this way.
+
+## Building the ISO in the test VM (preferred)
+
 ## Building the ISO in the test VM (preferred)
 
 The build needs no real hardware: run it in the test VM (CachyOS; create it
@@ -170,3 +204,20 @@ power-off.
 - `cachyos-calamares-next 3.4.2-13` needs `libboost_*.so.1.91.0` while the
   repos ship Boost 1.92: steamify-prepare.sh puts 1.91's libraries on the ISO
   (from archive.archlinux.org) until CachyOS rebuilds it.
+- Driving the ISO VM's Calamares with `scripts/qmpkey.py`/`qmpclick.py`/
+  `qmptype.py` (`scripts/vmisoboot.sh` for a VM without virgl, so
+  `qmpshot.py` screendumps work): `qmptype.py`'s character map has no `>`
+  or `&` — a typed command using either raises "no key for" and, worse,
+  can leave an **unterminated quote** in the shell's input buffer (a
+  stray `"` from a half-typed command), after which every later command
+  you type gets silently absorbed into that one open string instead of
+  running. Symptom: the prompt shows a bare `>` continuation instead of
+  `[user@host ~]$`. Fix: send Ctrl+C first (`send-key` with `ctrl`+`c`),
+  then retype. Prefer `| tee` over `> file`, and multiple `head`/`tail`
+  calls over one long redirected command. Calamares page buttons
+  (Volgende/Terug) move vertically as page content grows/shrinks: re-shot
+  and re-locate the button after every page change, don't reuse a fixed
+  y-coordinate. A second `pkexec-wrapper calamares -D6` while an earlier
+  failed instance's window is still open just prints "Calamares is already
+  running.": close that window first (its Cancel/Afbreken button, then
+  confirm the "really cancel?" dialog).
