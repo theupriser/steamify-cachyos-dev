@@ -54,6 +54,14 @@ change only shows right after Enter).
 | R2.1 | plain `--defaults` | every item OK, `exit: 0`, first-login autostart present |
 | R2.2 | first desktop login (steam-machine-iso skill) | Vapor layout, `primaryActions=3`, autostart gone, app opens |
 
+### F2.8.0 `--defaults --list`
+
+| # | Step | Expect |
+|---|---|---|
+| G1 | `steamify.sh --defaults --list` | exit 0, valid JSON array, no stderr, no header text mixed in |
+| G2 | items | actions (bios), retired (kpin, hdmi) excluded; unavailable here (vram, steamgame) excluded; poweroff has parent machine, boot has parent gaming and kind choice |
+| G3 | menu / plain `--defaults` still work | unaffected (regression) |
+
 ## F. Features per release
 
 ### F2.7.0 `--defaults --options` / `--boot`
@@ -109,3 +117,4 @@ change only shows right after Enter).
 | 2026-09-28 | same + CEC socket fix, UI label fix | R1.7, R1.10, U1-U8, H1, H4 (desktop), H5 | R1.7 first failed: `cec-audio-control.socket` never enabled (old bug, fixed: `cec_enable` enables it, `FEATURE_VERSION[cec]=2.7.0`); after: 53 PASS / 0 FAIL / 2 SKIP. UI: progress row said "Boot into Boot into" (fixed). Rest pass. Not run: R1.8, R1.9, R2.2, U9, H3 |
 | 2026-09-28 | `release/2.7.0` (VM from vminstall.sh, `~/vms/steamify-vm`) | R1.2 (fresh, CEC socket), R1.8, R1.9, R1.5 via U9, U9, R2.1, R2.2, H3 | all pass except one old bug: theme on (single on) → single off → theme off left single's launcher keys; fixed (`58e43d4`, PR #34) and retested. BIOS dry run F7F0107 → F7F0108 passed; greeter and SDDM reboot checks passed |
 | 2026-09-28 | `release/2.7.0` | H-Real | counted as passed: power-off fix, VRAM booster, LEDs, gamescope and Steam Machine support are unchanged since 2.6.0, which passed on the real Steam Machine. HDMI-CEC's change (enabling `cec-audio-control.socket`) passed with the fake TV in the VM; check the TV remote's volume keys on the real TV after updating (HDMI-CEC shows as update) |
+| 2026-09-28 | `release/2.8.0` (`feature/defaults-list`) | G1-G3, R1.1, R1.2 | all pass (VM `--fremont`, fake Steam Machine). Bundle shellcheck clean |
