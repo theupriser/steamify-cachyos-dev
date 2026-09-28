@@ -74,8 +74,8 @@ pacman -Ql cachyos-calamares-next | grep viewmodule
 
 Found on this build (2026-09-28): `packagechooserq` (arbitrary custom QML,
 `qmlFilename`) does **not exist** — only `packagechooser` does. Its
-`mode: optionalmultiple` genuinely supports multi-select (plain clicks add
-to the selection, not ctrl/shift) despite the misleading static label text
+`mode: optionalmultiple` supports multi-select, but only with Shift/Ctrl-click (plain clicks
+replace the selection; unusable for a real user) despite the misleading static label text
 ("Choose a product from the list. The selected product will be
 installed." shows in both single- and multi-select modes — don't trust
 it). Confirm real multi-select from the actual global-storage write in the
