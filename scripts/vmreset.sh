@@ -23,7 +23,7 @@ fi
 echo "Restoring snapshot '$SNAPSHOT' in $VM_DIR..."
 cd "$VM_DIR"
 # Always this repo's run.sh: a copy in $VM_DIR falls behind (VM_CACHE, ...).
-cp "$repo_dir/run.sh" run.sh
+[[ "$repo_dir/run.sh" -ef run.sh ]] || cp "$repo_dir/run.sh" run.sh
 qemu-img snapshot -a "$SNAPSHOT" disk.qcow2
 cp "vars.$SNAPSHOT.fd" vars.fd
 
