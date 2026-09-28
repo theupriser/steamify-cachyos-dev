@@ -9,7 +9,7 @@
 #                 REPO) instead of the newest release
 # The VM must run with its cache shared (one per VM, next to its disk), and
 # gets all host cores but 2 for the build: start it with
-#   VM_CACHE=$VM_DIR/iso-cache VM_CPUS=$(( $(nproc) - 2 )) scripts/vmreset.sh --fremont
+#   VM_CACHE=$VM_DIR/iso-cache VM_CPUS=$(( $(nproc) * 3 / 4 )) scripts/vmreset.sh --fremont
 # Env: VM_DIR (see common.sh), ISO_BRANCH (feat/steamify), ISO_OUT (the host's
 #      steammachine-cachyos-live-iso/out/desktop).
 set -euo pipefail
