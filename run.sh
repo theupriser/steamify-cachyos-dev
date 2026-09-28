@@ -10,7 +10,7 @@
 # VM_ISO=<path> boots that ISO for `install` instead of cachyos.iso; with
 # VM_KERNEL/VM_INITRD/VM_APPEND its kernel is booted directly with those
 # parameters (scripts/vminstall.sh, the unattended install).
-# VM_CPUS=<n>: guest CPUs (6); ISO builds use all host cores but 2.
+# VM_CPUS=<n>: guest CPUs (6); ISO builds use ~75% of host cores (nproc * 3 / 4), so the host stays usable.
 # VM_PORT=<n>: the host port for the guest's SSH (2222), e.g. a second VM.
 # BIOS_VERSION=F7F0107 makes the guest report that BIOS version (DMI), e.g.
 # to test the wizard's BIOS update item; the firmware itself doesn't change.
