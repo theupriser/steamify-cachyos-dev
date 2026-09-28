@@ -73,12 +73,15 @@ pacman -Ql cachyos-calamares-next | grep viewmodule
 ```
 
 Found on this build (2026-09-28): `packagechooserq` (arbitrary custom QML,
-`qmlFilename`) does **not exist** — only `packagechooser` does, and its
-`method: legacy` is a single-choice "pick one product" list **regardless of
-`mode: optionalmultiple`** (tested live: "Choose a product from the list.
-The selected product will be installed."). The one module confirmed to
-render real checkboxes for multiple simultaneous selections is
-**`netinstall`** (seen working on the Packages step).
+`qmlFilename`) does **not exist** — only `packagechooser` does. Its
+`mode: optionalmultiple` genuinely supports multi-select (plain clicks add
+to the selection, not ctrl/shift) despite the misleading static label text
+("Choose a product from the list. The selected product will be
+installed." shows in both single- and multi-select modes — don't trust
+it). Confirm real multi-select from the actual global-storage write in the
+foregrounded debug log (`pkexec-wrapper calamares -D6`), not the label
+text: `Config::updateGlobalStorage(const QStringList&)` logs
+`"<instance>" selected "id1,id2,id3"` (comma-separated) when it works.
 
 Test a page live, without any ISO rebuild: in the booted live session,
 edit `/etc/calamares/modules/<module>_<instance>.conf` and the matching
