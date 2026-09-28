@@ -224,3 +224,15 @@ power-off.
   failed instance's window is still open just prints "Calamares is already
   running.": close that window first (its Cancel/Afbreken button, then
   confirm the "really cancel?" dialog).
+- Run `pkexec-wrapper calamares -D6` in its **own Konsole tab**: it stays
+  in the foreground and blocks that tab's shell. Typing into the same
+  tab afterwards just echoes the text inertly into Calamares' stdin
+  (no error, nothing runs). Open "New Tab" in Konsole for commands.
+- Calamares' Welcome page applies its keyboard layout to the live session
+  immediately (a live typing preview). If it's not US (e.g. Dutch after
+  picking Nederlands), `qmptype.py`'s US-layout key map silently sends
+  the wrong characters afterwards: `/` becomes `-`, `(`/`)` get garbled,
+  with no "no key for" error. `setxkbmap us` does nothing on Wayland.
+  Probe with a symbol-free command (`echo test123`) after any
+  language/keyboard step, and fix the layout from the live session's own
+  settings before typing paths or shell syntax again.
