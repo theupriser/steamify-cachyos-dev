@@ -228,6 +228,28 @@ power-off.
   in the foreground and blocks that tab's shell. Typing into the same
   tab afterwards just echoes the text inertly into Calamares' stdin
   (no error, nothing runs). Open "New Tab" in Konsole for commands.
+
+## Keeping this cheap: don't poll screenshots
+
+Repeated `qmpshot.py` + image analysis to detect "is it booted yet" burns a
+lot of tokens per image. Prefer cheap, text-only signals instead:
+
+- **Boot readiness**: pass `VM_SERIAL=<dir>/serial` to `run.sh`/`vmisoboot.sh`
+  (it logs `console=ttyS0` to a plain text file via a QMU chardev socket).
+  Wait with a background `tail -F <dir>/serial | grep -E "Reached target
+  Graphical Interface|sddm|plasmashell|login:|Failed|panic"` — one line of
+  text per event, no image tokens at all.
+- **Driving the wizard/Calamares**: script a fixed sequence of
+  `qmpkey.py`/`qmptype.py`/`qmpclick.py` calls from a known page layout
+  instead of screenshotting after every step to "see where we are". Only
+  take a screenshot at real decision points (to show the user, or to verify
+  a page layout changed) — not as a polling mechanism.
+- **When the user is driving by hand** (as in a live install), just ask them
+  what they see / what step they're on instead of screenshotting the VM
+  yourself — they're already looking at it.
+- If you must poll for "is the screen non-black yet", a single low-res
+  screenshot at the end of a serial-log-driven wait is enough; don't loop
+  screenshots every few seconds.
 - Calamares' Welcome page applies its keyboard layout to the live session
   immediately (a live typing preview). If it's not US (e.g. Dutch after
   picking Nederlands), `qmptype.py`'s US-layout key map silently sends
