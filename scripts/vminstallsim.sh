@@ -17,7 +17,7 @@ cat > /tmp/install-sim.sh << SIM
 #!/bin/bash
 id $u >/dev/null 2>&1 || { sudo useradd -m -G wheel -s /bin/bash $u; echo "$u:$u" | sudo chpasswd; }
 echo "$u ALL=(ALL) NOPASSWD: ALL" | sudo tee /etc/sudoers.d/10-steamify-install-sim >/dev/null
-sudo -u $u env -i HOME=/home/$u USER=$u LOGNAME=$u PATH=/usr/local/bin:/usr/bin TERM=xterm \
+sudo -u $u env -i HOME=/home/$u USER=$u LOGNAME=$u PATH=/usr/local/bin:/usr/bin TERM=xterm LANG=C.UTF-8 \
     bash -c 'cd ~ && /mnt/steamify.sh --defaults $opts < /dev/null' 2>&1 | tee /tmp/install-sim.log
 echo "exit: \${PIPESTATUS[0]}" | tee -a /tmp/install-sim.log
 sudo rm -f /etc/sudoers.d/10-steamify-install-sim

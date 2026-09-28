@@ -6,12 +6,15 @@
 !/CHANGELOG.md
 !/run.sh
 !/get-iso.sh
+!/TESTPLAN.md
 !/scripts/
 !/share/
 !/.claude/
 
 share/*
 !share/guest-ssh-setup.sh
+!share/vminstall-live.sh
+!share/vminstall-post.sh
 
 # Belt and braces, anywhere in the tree
 *.iso
@@ -23,3 +26,4 @@ share/*
 *.log
 *.tmp
 host-keys.pub
+__pycache__/
