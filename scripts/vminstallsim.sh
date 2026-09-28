@@ -5,7 +5,7 @@
 # desktop. Prints the per-component result lines.
 #   scripts/vminstallsim.sh [--fresh] [--defaults options...]
 #       --fresh: delete and recreate the user first; the rest goes to
-#       --defaults (e.g. --skip cec,theme --boot desktop)
+#       --defaults (e.g. --options gaming,theme --boot desktop)
 # Env: VM_USER / VM_PORT / VM_HOST, SIM_USER (isotest), GUEST_UID (1000).
 set -euo pipefail
 . "$(dirname "$0")/common.sh"
