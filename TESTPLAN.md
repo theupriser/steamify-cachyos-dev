@@ -95,6 +95,22 @@ change only shows right after Enter).
 - Gamescope itself: gaming mode, Switch to Desktop / Return to Gaming Mode.
 - LED bar light, real TV over HDMI-CEC (remote, TV on/off, sleep/wake).
 
+## B. Boot loaders (`scripts/vmtest.sh`, unattended)
+
+Every loader the ISO advertises (Limine, systemd-boot, GRUB), each on a VM installed from the Steamify ISO
+and started with `--fremont`. Automated: `scripts/vmtest.sh` (see the vm-install skill).
+
+| # | Step | Expect |
+|---|---|---|
+| B1 | first boot after the unattended install | boots by itself (systemd-boot: `timeout`/`default` set by the test setup), SSH answers |
+| B2 | Steamify's state, as its own `*_status` functions | gaming, theme, glyphs, single, launcher, notify, poweroff, cec all on |
+| B3 | OS name | `os-release` NAME/PRETTY_NAME are CachyOS's, `lsb-release` has no "with Steamify"; Limine has `TARGET_OS_NAME` |
+| B4 | loader identity, firmware setup | the expected loader; `Boot into FW: supported` (BIOS item) |
+| B5 | DKMS modules (`leds-valve`, `cros-ec-cec`, `steamify-fremont-poweroff`) | installed for every kernel, files present, `modules-load.d` entry |
+| B6 | legacy `drm.edid_firmware` removal (`hdmi_remove_boot_param`) | detected, removed, initramfs and entries rebuilt, no edid left |
+| B7 | kernel update (both kernels + headers) | DKMS rebuilds 3 modules per kernel, initramfs rebuilt, loader config regenerated |
+| B8 | reboot into the default and the other kernel | both boot, no failed units, power-off fix and LED modules loaded on each |
+
 ## Known gaps
 
 - "Add as non-Steam game" can't be set up at install time (no Steam account
@@ -117,4 +133,5 @@ change only shows right after Enter).
 | 2026-09-28 | same + CEC socket fix, UI label fix | R1.7, R1.10, U1-U8, H1, H4 (desktop), H5 | R1.7 first failed: `cec-audio-control.socket` never enabled (old bug, fixed: `cec_enable` enables it, `FEATURE_VERSION[cec]=2.7.0`); after: 53 PASS / 0 FAIL / 2 SKIP. UI: progress row said "Boot into Boot into" (fixed). Rest pass. Not run: R1.8, R1.9, R2.2, U9, H3 |
 | 2026-09-28 | `release/2.7.0` (VM from vminstall.sh, `~/vms/steamify-vm`) | R1.2 (fresh, CEC socket), R1.8, R1.9, R1.5 via U9, U9, R2.1, R2.2, H3 | all pass except one old bug: theme on (single on) → single off → theme off left single's launcher keys; fixed (`58e43d4`, PR #34) and retested. BIOS dry run F7F0107 → F7F0108 passed; greeter and SDDM reboot checks passed |
 | 2026-09-28 | `release/2.7.0` | H-Real | counted as passed: power-off fix, VRAM booster, LEDs, gamescope and Steam Machine support are unchanged since 2.6.0, which passed on the real Steam Machine. HDMI-CEC's change (enabling `cec-audio-control.socket`) passed with the fake TV in the VM; check the TV remote's volume keys on the real TV after updating (HDMI-CEC shows as update) |
+| 2026-09-29 | `feature/vminstall-bootloader` (Steamify ISO 2026.09.28, `--fremont`) | B1-B8 | Limine 41 / systemd-boot 40 / GRUB 40 checks pass. Found on the way (test setup, not Steamify): ufw blocks ssh, systemd-boot has no timeout/default after cachyos-installer |
 | 2026-09-28 | `release/2.8.0` (`feature/defaults-list`) | G1-G3, R1.1, R1.2 | all pass (VM `--fremont`, fake Steam Machine). Bundle shellcheck clean |
