@@ -4,7 +4,13 @@ pass() { echo "PASS $*"; }; fail() { echo "FAIL $*"; }
 k=$(uname -r)
 echo "kernel: $k"; echo "cmdline: $(cut -c1-140 /proc/cmdline)"
 compgen -G "/usr/lib/modules/$k/updates/dkms/steamify-fremont-poweroff.ko*" >/dev/null && pass "power-off fix built for the running kernel" || fail "no power-off fix for $k"
-sudo dmesg | grep -q "steamify_fremont_poweroff" && pass "power-off fix loaded at boot" || fail "power-off fix not loaded"
+# Loaded (a real Steam Machine), or tried at boot and refused with "No such device" (the VM has no AMD GPIO
+# controller, so the module returns -ENODEV silently). The refusal is in the journal; it only sometimes
+# reaches dmesg, which is what this used to grep.
+if lsmod | grep -q '^steamify_fremont_poweroff'; then pass "power-off fix loaded at boot"
+elif sudo journalctl -b -q --no-pager -u systemd-modules-load | grep -q "steamify_fremont_poweroff.*No such device"; then
+    pass "power-off fix tried at boot (No such device: no AMD GPIO controller in the VM)"
+else fail "power-off fix not loaded, and not tried at boot"; fi
 lsmod | grep -q '^leds_valve' && pass "leds_valve loaded" || fail "leds_valve not loaded"
 [[ -z "$(systemctl --failed --no-legend)" ]] && pass "no failed units" || { fail "failed units:"; systemctl --failed --no-legend; }
 # B1: booted through the loader's own EFI boot entry, not the firmware's automatic disk entry (the
