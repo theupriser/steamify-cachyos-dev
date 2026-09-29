@@ -125,8 +125,9 @@ and started with `--fremont`. Automated: `scripts/vmtest.sh` (see the vm-install
   a release it shows the old version; start the branch's app by hand
   (steam-machine-iso skill).
 
-- CEC (B2, B5, B7, R1.7): the driver source is downloaded from raw.githubusercontent.com at setup time;
-  a GitHub rate limit (HTTP 429) fails CEC and every check that needs its module. Rerun later; fix in TODO.
+- CEC: the driver source comes from an unofficial mirror of Valve's kernel on GitHub; since 2.9.1 it is
+  downloaded once and cached (/var/cache/steamify; the VMs share the host's), so only a first download
+  can hit GitHub's rate limit (HTTP 429).
 
 ## Results log
 
@@ -140,3 +141,4 @@ and started with `--fremont`. Automated: `scripts/vmtest.sh` (see the vm-install
 | 2026-09-28 | `release/2.8.0` (`feature/defaults-list`) | G1-G3, R1.1, R1.2 | all pass (VM `--fremont`, fake Steam Machine). Bundle shellcheck clean |
 | 2026-09-29 | Steamify 2.9.0 (`steamify-cachyos` main), ISO `feat/steamify` with PR #2 (2026.09.29), dev `main` 5b867f8; on the PC (WSL2) | everything automated: B1-B8 (3 loaders), cli, menu, hw, installer, toggles (`scripts/vmtest.sh`, parallel, `MAX_PARALLEL=3`) | **328 pass, 0 fail** (toggles 42 +1 expected skip, hw 70, cli 55, menu 36, installer 4, Limine 41, systemd-boot 40, GRUB 40) in 18 minutes: the first complete parallel run. Found on the way: systemd-boot had no EFI boot entry (installer's `bootctl` in a chroot), fixed in the ISO (PR #2); `vminstall.sh` fixes for parallel installs and a root host user |
 | 2026-09-29 | ISO `feat/steamify` + PR #3 (`/var/log`), dev `main` with the B1 boot entry check | B1-B8 | Limine 43 / GRUB 42 pass (boot entry check passes: `Limine`, `cachyos`). systemd-boot (reinstalled): 36 pass, 8 fail, all CEC: the driver download got HTTP 429 from GitHub (rate limit); boot entry check passes (`Linux Boot Manager`); `/var/log/steamify-install.log` and `steamify-bootentry.log` readable after boot |
+| 2026-09-29 | Steamify `release/2.9.1` (CEC driver cache), ISO `feat/steamify` (PRs #2, #3), dev `main` | everything automated incl. hw block 50 (CEC cache) and the B1 boot entry check | **341 pass, 0 fail** in 19 minutes (toggles 42 +1 expected skip, hw 77, cli 55, menu 36, installer 4, Limine 43, systemd-boot 42, GRUB 42) |
