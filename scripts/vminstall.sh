@@ -84,15 +84,24 @@ echo "ISO: $iso  key: $VM_SSH_KEY"
 # --- The ISO's kernel and initramfs, to boot it with our parameters.
 boot="$VM_DIR/iso-boot"
 mkdir -p "$boot"
-loop="$(udisksctl loop-setup --no-user-interaction -r -f "$iso" | grep -o '/dev/loop[0-9]*')"
-cleanup_loop() { udisksctl unmount --no-user-interaction -b "${loop}p1" >/dev/null 2>&1 || true; udisksctl loop-delete --no-user-interaction -b "$loop" >/dev/null 2>&1 || true; }
-trap cleanup_loop EXIT
-mnt=""
-for _ in $(seq 10); do
-    mnt="$(findmnt -nro TARGET "${loop}p1" 2>/dev/null || true)"
-    [[ -n "$mnt" ]] && break
-    udisksctl mount --no-user-interaction -b "${loop}p1" >/dev/null 2>&1 || true; sleep 1
-done
+if ! command -v udisksctl >/dev/null && [[ $EUID -eq 0 ]]; then
+    # No udisks (the WSL box, as root): a plain loop device and mount.
+    loop="$(losetup -f -r -P --show "$iso")"
+    mnt="$(mktemp -d)"
+    cleanup_loop() { umount "$mnt" 2>/dev/null || true; rmdir "$mnt" 2>/dev/null || true; losetup -d "$loop" 2>/dev/null || true; }
+    trap cleanup_loop EXIT
+    mount -r "${loop}p1" "$mnt" 2>/dev/null || mnt=""
+else
+    loop="$(udisksctl loop-setup --no-user-interaction -r -f "$iso" | grep -o '/dev/loop[0-9]*')"
+    cleanup_loop() { udisksctl unmount --no-user-interaction -b "${loop}p1" >/dev/null 2>&1 || true; udisksctl loop-delete --no-user-interaction -b "$loop" >/dev/null 2>&1 || true; }
+    trap cleanup_loop EXIT
+    mnt=""
+    for _ in $(seq 10); do
+        mnt="$(findmnt -nro TARGET "${loop}p1" 2>/dev/null || true)"
+        [[ -n "$mnt" ]] && break
+        udisksctl mount --no-user-interaction -b "${loop}p1" >/dev/null 2>&1 || true; sleep 1
+    done
+fi
 [[ -n "$mnt" ]] || { echo "Couldn't mount the ISO." >&2; exit 1; }
 rm -f "$boot"/*   # copied read-only from the ISO
 install -m 644 "$mnt/arch/boot/x86_64/vmlinuz-linux-cachyos" "$mnt/arch/boot/x86_64/initramfs-linux-cachyos.img" "$boot/"
