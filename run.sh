@@ -11,6 +11,7 @@
 # VM_ISO=<path> boots that ISO for `install` instead of cachyos.iso; with
 # VM_KERNEL/VM_INITRD/VM_APPEND its kernel is booted directly with those
 # parameters (scripts/vminstall.sh, the unattended install).
+# VM_MEM=<size>: guest RAM (8G; the automated tests use 4G so three VMs fit next to a desktop).
 # VM_CPUS=<n>: guest CPUs (6); ISO builds use ~75% of host cores (nproc * 3 / 4), so the host stays usable.
 # VM_PORT=<n>: the host port for the guest's SSH (2222), e.g. a second VM.
 # BIOS_VERSION=F7F0107 makes the guest report that BIOS version (DMI), e.g.
@@ -72,8 +73,8 @@ ovmf=/usr/share/OVMF; ovmf_code=OVMF_CODE_4M.fd; ovmf_vars=OVMF_VARS_4M.fd
 cat ~/.ssh/*.pub > share/host-keys.pub
 
 exec qemu-system-x86_64 \
-    -enable-kvm -machine q35,memory-backend=mem -cpu host -smp "${VM_CPUS:-6}" -m 8G \
-    -object memory-backend-memfd,id=mem,size=8G,share=on \
+    -enable-kvm -machine q35,memory-backend=mem -cpu host -smp "${VM_CPUS:-6}" -m "${VM_MEM:-8G}" \
+    -object memory-backend-memfd,id=mem,size=${VM_MEM:-8G},share=on \
     -drive if=pflash,format=raw,readonly=on,file="$ovmf/$ovmf_code" \
     -drive if=pflash,format=raw,file=vars.fd \
     -drive file=disk.qcow2,if=virtio \

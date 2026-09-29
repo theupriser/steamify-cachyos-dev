@@ -23,6 +23,8 @@ done
 $window || export VM_HEADLESS=1
 case "$loader" in limine|systemd-boot|grub) ;; *) echo "Unknown boot loader: $loader" >&2; exit 2 ;; esac
 export VM_DIR="${VM_DIR:-$HOME/vms/bl-$loader}"
+# Own ssh port per loader, so the loaders can run side by side (vmtest.sh).
+case "$loader" in limine) export VM_PORT="${VM_PORT:-2401}" ;; systemd-boot) export VM_PORT="${VM_PORT:-2402}" ;; grub) export VM_PORT="${VM_PORT:-2403}" ;; esac
 . "$here/common.sh"
 guest="$repo/share/bootloader-test"
 log="$VM_DIR.test.log"
@@ -31,16 +33,16 @@ step() { printf '\n##### %s %s\n' "$(date +%T)" "$*"; }
 gssh() { vm_ssh -o ConnectTimeout=6 -o LogLevel=ERROR "$@"; }
 gscript() { gssh env "LOADER=$loader" bash -s < "$guest/$1"; }   # the guest's login shell is fish
 waitssh() { local _; for _ in $(seq 60); do gssh 'uptime -p' 2>/dev/null | grep -q '^up' && return 0; sleep 5; done; echo "FAIL no SSH"; return 1; }
-running() { pgrep -f '^qemu-system' >/dev/null; }
+running() { pgrep -f "[h]ostfwd=tcp::$VM_PORT-" >/dev/null; }
 stop_vm() {
     running || return 0
     # Whichever VM runs: its key and host key are not this VM's.
     ssh -p "$VM_PORT" -i "$VM_SSH_KEY" -o BatchMode=yes -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o LogLevel=ERROR \
         "$VM_USER@$VM_HOST" 'sudo systemctl poweroff' >/dev/null 2>&1
     local _; for _ in $(seq 30); do running || return 0; sleep 2; done
-    pkill -f '^qemu-system'; sleep 2
+    pkill -f "[h]ostfwd=tcp::$VM_PORT-"; sleep 2
 }
-start_vm() { stop_vm; cp "$repo/run.sh" "$VM_DIR/run.sh"; (cd "$VM_DIR" && REPO="${REPO:-$repo/../steamify-cachyos}" setsid nohup ./run.sh --fremont > vm.log 2>&1 &); }
+start_vm() { stop_vm; cp "$repo/run.sh" "$VM_DIR/run.sh"; (cd "$VM_DIR" && VM_MEM="${VM_MEM:-4G}" REPO="${REPO:-$repo/../steamify-cachyos}" setsid nohup ./run.sh --fremont > vm.log 2>&1 &); }
 reboot_vm() { gssh 'sudo systemctl reboot' >/dev/null 2>&1; sleep 25; waitssh; }
 view_start   # one shared Konsole (common.sh)
 # The guest checks print PASS/FAIL lines; the summary at the end counts them in the log.
@@ -110,7 +112,7 @@ b="$(gssh uname -r)"
 
 step "DONE"
 stop_vm
-} 2>&1 | tee "$log" | tee -a "$TEST_LOG" | sed 's/\x1b\[[0-9;]*m//g'
+} 2>&1 | tee "$log" | tee >(sed -u "s/^/[$loader] /" >> "$TEST_LOG") | sed 's/\x1b\[[0-9;]*m//g'
 fails="$(grep -c '^FAIL' "$log")"
 echo; echo "== $loader: $(grep -c '^PASS' "$log") passed, $fails failed (log: $log)"
 grep '^FAIL' "$log"
