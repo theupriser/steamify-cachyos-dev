@@ -29,13 +29,12 @@ wsl-build-host, progress-report).
 
 ## State (2026-09-29; update when it changes)
 - `scripts/vmtest.sh` runs the whole unattended test: boot loaders limine/systemd-boot/grub (`vmbootloadertest.sh`) and the
-  suites cli, menu, hw, installer, toggles (`vmsuite.sh`, checks in `share/vmtest/`). Each passed in its own run: limine 41,
-  systemd-boot 40, grub 40, cli 55, menu 36, hw 70, installer 4, toggles 42 checks.
+  suites cli, menu, hw, installer, toggles (`vmsuite.sh`, checks in `share/vmtest/`). Each passed in its own run: limine 43,
+  systemd-boot 42, grub 42 (with the B1 boot entry check), cli 55, menu 36, hw 70, installer 4, toggles 42 checks.
 - 2026-09-29, on the PC (WSL2): the first complete parallel run, **328 pass, 0 fail in 18 minutes** (base image +
   qcow2 overlays, own ssh port per job, package cache, `VM_MEM=4G`, `MAX_PARALLEL=3`). On a new machine: one full
   `scripts/vmtest.sh --screen`, read `~/vms/last-test.txt`, fix what fails.
-- Open work: `TODO.md` (the B1 boot entry check, the ISO's hidden `@log` logs, the
-  GitHub Actions workflow, P3).
+- Open work: `TODO.md` (the CEC driver download, the GitHub Actions workflow, P3).
 
 ## Where the tests run
 The tests run on the user's PC (Ryzen 9800X3D, 64 GB, **WSL2**), started from a laptop over ssh (the user's own skill, or
@@ -48,7 +47,7 @@ passthrough): `.claude/skills/wsl-build-host/SKILL.md`. `vminstall.sh` works the
 - Fixed (PR #2): cachyos-installer's `bootctl install` runs in a chroot and writes no EFI boot entry, so systemd-boot
   only booted through the disk's fallback path (in OVMF after 4-5 minutes of network boot, every boot).
   `steamify-install` now registers it with efibootmgr from the live system.
-- `/var/log` (`@log`) isn't mounted when `steamify-install` runs: its logs are hidden under the mount after boot.
+- Fixed (PR #3): `/var/log` (`@log`) wasn't mounted when `steamify-install` ran, so its logs were hidden after boot.
 - cachyos-installer leaves systemd-boot with `#timeout 3` and no default entry: a real machine waits in the menu for ever
   (the test setup papers over it in `share/vminstall-post.sh`).
 - It enables ufw, which drops ssh from the host (the test setup runs `ufw allow 22/tcp`).
