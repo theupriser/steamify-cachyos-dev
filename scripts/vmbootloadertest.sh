@@ -42,6 +42,7 @@ stop_vm() {
     local _; for _ in $(seq 30); do running || return 0; sleep 2; done
     pkill -f "[h]ostfwd=tcp::$VM_PORT-"; sleep 2
 }
+export VM_CACHE="${VM_CACHE-$HOME/vms/pkg-cache}"   # 9p tag `cache`: Steamify's downloads once for every VM
 start_vm() { stop_vm; cp "$repo/run.sh" "$VM_DIR/run.sh"; (cd "$VM_DIR" && VM_MEM="${VM_MEM:-4G}" REPO="${REPO:-$repo/../steamify-cachyos}" setsid nohup ./run.sh --fremont > vm.log 2>&1 &); }
 reboot_vm() { gssh 'sudo systemctl reboot' >/dev/null 2>&1; sleep 25; waitssh; }
 view_start   # one shared Konsole (common.sh)
@@ -69,6 +70,7 @@ start_vm; waitssh || exit 1
 gssh 'sudo cat /sys/class/dmi/id/product_name' 2>/dev/null
 
 step "Steamify's Steam Machine options"
+gssh 'sudo mkdir -p /var/cache/steamify-pkg /var/cache/steamify; sudo mountpoint -q /var/cache/steamify-pkg || sudo mount -t 9p -o trans=virtio,version=9p2000.L cache /var/cache/steamify-pkg && { sudo mkdir -p /var/cache/steamify-pkg/steamify; sudo mount --bind /var/cache/steamify-pkg/steamify /var/cache/steamify; }' 2>/dev/null
 gssh 'sudo mountpoint -q /mnt || sudo mount -t 9p -o trans=virtio,version=9p2000.L repo /mnt; cd /mnt && nohup bash steamify.sh --defaults --options gaming,theme,glyphs,single,launcher,notify,vram,cec,machine,poweroff --boot gamescope > /tmp/steamify.log 2>&1 < /dev/null &'
 sleep 20
 # [s]: the pattern must not match this ssh command itself.

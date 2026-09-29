@@ -63,6 +63,8 @@ fi
 # Steamify's packages (Steam, ...) install inside the new system: same cache.
 if [[ -n "$CACHE" ]]; then
     mkdir -p /mnt/var/cache/pacman/pkg && mount --bind $CACHE/pkg /mnt/var/cache/pacman/pkg || echo "(no cache in the new system)"
+    # Steamify's own downloads (the CEC driver: GitHub rate-limits it)
+    mkdir -p $CACHE/steamify /mnt/var/cache/steamify && mount --bind $CACHE/steamify /mnt/var/cache/steamify || true
 fi
 
 # What Calamares does after its users step (shellprocess_steamify): Steamify's

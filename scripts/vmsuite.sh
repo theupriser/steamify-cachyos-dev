@@ -74,6 +74,8 @@ for f in /etc/pacman.d/*mirrorlist*; do sudo sed -i '/krfoss/s/^Server/#Server/'
 sudo mkdir -p /var/cache/steamify-pkg
 if sudo mount -t 9p -o trans=virtio,version=9p2000.L cache /var/cache/steamify-pkg 2>/dev/null; then
     sudo mkdir -p /var/cache/steamify-pkg/pkg; sudo mount --bind /var/cache/steamify-pkg/pkg /var/cache/pacman/pkg
+    # Steamify's own downloads (the CEC driver: GitHub rate-limits it) once for every VM
+    sudo mkdir -p /var/cache/steamify-pkg/steamify /var/cache/steamify; sudo mount --bind /var/cache/steamify-pkg/steamify /var/cache/steamify
 fi
 pgrep -u "$USER" -x plasmashell >/dev/null && echo "Logged in to Plasma." || { echo "Plasma did not start." >&2; exit 1; }
 REMOTE
