@@ -165,7 +165,12 @@ echo "Installing: watch the VM's window, or follow the console with tail -f $VM_
 VM_SERIAL="$VM_DIR/serial.log" VM_ISO="$iso" VM_KERNEL="$boot/vmlinuz-linux-cachyos" VM_INITRD="$boot/initramfs-linux-cachyos.img" VM_APPEND="$append" \
     ./run.sh install "${run_flags[@]}" > vm-install.log 2>&1 &
 qemu=$!
-for _ in $(seq 1080); do kill -0 $qemu 2>/dev/null || break; sleep 5; done   # 90 minutes
+# 90 minutes; a failure reported by the live system ends it at once (it stays up after one)
+for _ in $(seq 1080); do
+    kill -0 $qemu 2>/dev/null || break
+    [[ -s "$www/status" && "$(cat "$www/status")" != ok ]] && { sleep 5; kill $qemu 2>/dev/null; wait $qemu 2>/dev/null; break; }
+    sleep 5
+done
 kill -0 $qemu 2>/dev/null && { echo "The install didn't finish in 90 minutes; see $www/install.log." >&2; kill $qemu; exit 1; }
 status="$(cat "$www/status" 2>/dev/null || echo "no status (the live system never reported back)")"
 cp "$www/install.log" install.log 2>/dev/null || true
