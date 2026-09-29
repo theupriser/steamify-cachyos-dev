@@ -1,11 +1,12 @@
 #!/bin/bash
 # CachyOS test VM for steamify.sh.
-#   [REPO=/path/to/cachyos-gamescope-boot] ./run.sh [install] [--nvidia] [--vulkan] [--amd] [--fremont]
+#   [REPO=/path/to/cachyos-gamescope-boot] ./run.sh [install] [--nvidia] [--vulkan] [--amd] [--fremont] [--headless]
 #     install    boot the installer ISO
 #     --nvidia   render the guest's virtio-gpu (virgl) on the host NVIDIA dGPU
 #     --vulkan   expose Vulkan to the guest (venus; needed by gamescope, can be unstable)
 #     --amd      with --vulkan: venus on the host AMD iGPU (RADV) instead of NVIDIA
 #     --fremont  report the Valve Steam Machine's DMI data (for testing the wizard)
+#     --headless no window (unattended tests, CI); a VM you start by hand has one. VM_HEADLESS=1 does the same
 # REPO defaults to $HOME/projects/cachyos-gamescope-boot.
 # VM_ISO=<path> boots that ISO for `install` instead of cachyos.iso; with
 # VM_KERNEL/VM_INITRD/VM_APPEND its kernel is booted directly with those
@@ -48,10 +49,16 @@ for arg in "$@"; do
                          __EGL_VENDOR_LIBRARY_FILENAMES=/usr/share/glvnd/egl_vendor.d/10_nvidia.json ;;
         --vulkan) gpu+=,hostmem=4G,blob=true,venus=true ;;
         --amd) export VK_DRIVER_FILES=/usr/share/vulkan/icd.d/radeon_icd.json ;;
+        --headless) VM_HEADLESS=1 ;;
         --fremont) smbios+=(-smbios type=1,manufacturer=Valve,product=Fremont -smbios type=2,manufacturer=Valve,product=Fremont) ;;
         *) echo "unknown argument: $arg" >&2; exit 1 ;;
     esac
 done
+
+# VM_HEADLESS=1: no window (unattended tests, CI): plain virtio-vga and -display none;
+# QMP screendump works then too. The guest and ssh don't notice.
+display=(-display "gtk,gl=$gl,zoom-to-fit=off")
+[[ -n "${VM_HEADLESS:-}" ]] && { gpu=virtio-vga,xres=1920,yres=1080; display=(-display none); }
 
 # UEFI firmware: Ubuntu's path, or Arch's (edk2-ovmf).
 ovmf=/usr/share/OVMF; ovmf_code=OVMF_CODE_4M.fd; ovmf_vars=OVMF_VARS_4M.fd
@@ -70,7 +77,7 @@ exec qemu-system-x86_64 \
     -drive if=pflash,format=raw,readonly=on,file="$ovmf/$ovmf_code" \
     -drive if=pflash,format=raw,file=vars.fd \
     -drive file=disk.qcow2,if=virtio \
-    -device "$gpu" -display gtk,gl=$gl,zoom-to-fit=off \
+    -device "$gpu" "${display[@]}" \
     -device qemu-xhci -device usb-tablet \
     -nic user,model=virtio-net-pci,hostfwd=tcp::${VM_PORT:-2222}-:22 \
     -virtfs local,path="$repo",mount_tag=repo,security_model=mapped-xattr \
