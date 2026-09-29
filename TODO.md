@@ -77,9 +77,11 @@ Where the time goes: boot loader VMs ~3 min each, every suite block restores a s
 - [x] B1 check (share/bootloader-test/boot-check.sh, after every reboot; passes on all three): the loader's own EFI boot entry exists, points to a real partition (not `HD(0,GPT,0000...)`)
       and was used (`efibootmgr` `BootCurrent`); systemd-boot booted through the fallback path unnoticed
 - [x] ISO: mount `@log` at `$ROOT/var/log` before `steamify-install` writes its logs (PR #3 merged)
-- [ ] Steamify: the CEC driver comes from one download (raw.githubusercontent.com, no retry, no fallback);
+- [x] Steamify 2.9.1 (PR #53 into release/2.9.1; hw block 50 tests it): the CEC driver comes from one download (raw.githubusercontent.com, no retry, no fallback);
       a GitHub rate limit (HTTP 429, seen 2026-09-29 after a day of test installs) leaves CEC off. Ship the
-      pinned source with Steamify instead (steamify-cachyos, via a release branch)
+      pinned source with Steamify instead (steamify-cachyos, via a release branch). Done as a cache in
+      /var/cache/steamify (named after its checksum); the VMs share the host's (~/vms/pkg-cache/steamify).
+      Later maybe: ship the file itself (the source repo is an unofficial mirror)
 - [x] ISO: systemd-boot's EFI boot entry (efibootmgr from the live system), PR #2 merged
 - [x] vminstall.sh: a poweroff that drops ssh is no failure, wait only for its own VM, ISO loop device under
       a lock, never root as the guest user

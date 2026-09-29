@@ -30,7 +30,7 @@ wsl-build-host, progress-report).
 ## State (2026-09-29; update when it changes)
 - `scripts/vmtest.sh` runs the whole unattended test: boot loaders limine/systemd-boot/grub (`vmbootloadertest.sh`) and the
   suites cli, menu, hw, installer, toggles (`vmsuite.sh`, checks in `share/vmtest/`). Each passed in its own run: limine 43,
-  systemd-boot 42, grub 42 (with the B1 boot entry check), cli 55, menu 36, hw 70, installer 4, toggles 42 checks.
+  systemd-boot 42, grub 42 (with the B1 boot entry check), cli 55, menu 36, hw 77, installer 4, toggles 42 checks.
 - 2026-09-29, on the PC (WSL2): the first complete parallel run, **328 pass, 0 fail in 18 minutes** (base image +
   qcow2 overlays, own ssh port per job, package cache, `VM_MEM=4G`, `MAX_PARALLEL=3`). On a new machine: one full
   `scripts/vmtest.sh --screen`, read `~/vms/last-test.txt`, fix what fails.
