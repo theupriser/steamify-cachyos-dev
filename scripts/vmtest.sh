@@ -1,37 +1,67 @@
 #!/bin/bash
-# The whole boot loader test in one command: every boot loader the Steamify ISO
-# advertises, each on its own VM (~/vms/bl-<loader>), one after the other.
-#   scripts/vmtest.sh [--install] [--window] [loader...]     default: all advertised loaders
-#   --install  install each VM first from the newest Steamify ISO (asks before replacing a disk)
-#   --window   show the VMs' windows (default: headless; on a desktop one Konsole follows all the logs)
-# Checks per loader (scripts/vmbootloadertest.sh + share/bootloader-test/):
-#   Steamify's state as its menu sees it, OS name untouched, loader identity,
-#   DKMS modules for every kernel, Steamify's loader-specific code, a kernel
-#   update, a reboot into each kernel. Add a check there, and it runs here.
-# Prints one line per loader and the failed checks; exit status = failures.
+# The whole automated test, one command: the boot loader test for every loader the Steamify ISO
+# advertises, plus every suite in share/vmtest/ (TESTPLAN.md rows that need no person).
+#   scripts/vmtest.sh [--install] [--window] [--screen] [boot | <loader>... | <suite>...]
+#   no argument   everything: boot (all advertised loaders) and all suites
+#   boot          the boot loader test (limine, systemd-boot, grub), or name loaders
+#   <suite>       cli, menu, hw, installer, toggles (folders in share/vmtest/)
+#   --install     install the boot loader VMs first from the newest Steamify ISO (asks before replacing a disk)
+#   --window      show the VMs' windows (default: headless; one shared Konsole follows ~/vms/test.log)
+#   --screen      run in a detached `screen` session named vmtest: `screen -r vmtest` to watch, Ctrl-a d to leave
+# The suites run on the plain CachyOS VM ~/vms/steamify-vm (Plasma, from vminstall.sh --iso <CachyOS ISO>
+# with VM_STEAMIFY=skip); the boot loader test on ~/vms/bl-<loader> (Steamify ISO).
+# Output: one line per loader/suite and the failed checks; the same in ~/vms/last-test.txt. Exit status = failures.
+# Rows that need a person (screenshots, the real Steam Machine) are listed at the end, never silently dropped.
 set -uo pipefail
 here="$(cd "$(dirname "$0")" && pwd)"
 repo="$(cd "$here/.." && pwd)"
 iso_repo="$repo/../steammachine-cachyos-live-iso"
-install=""; window=""; loaders=()
+args=("$@")
+install=""; window=""; screen=false; loaders=(); suites=(); want_boot=false
 for a in "$@"; do
-    case "$a" in --install) install=--install ;; --window) window=--window ;; *) loaders+=("$a") ;; esac
+    case "$a" in
+        --install) install=--install ;;
+        --window) window=--window ;;
+        --screen) screen=true ;;
+        boot) want_boot=true ;;
+        limine|systemd-boot|grub) loaders+=("$a"); want_boot=true ;;
+        *) [[ -d "$repo/share/vmtest/$a" ]] && suites+=("$a") || { echo "Unknown argument: $a" >&2; exit 2; } ;;
+    esac
 done
+if $screen; then
+    command -v screen >/dev/null || { echo "screen is not installed" >&2; exit 2; }
+    screen -ls | grep -q '\.vmtest\s' && { echo "A vmtest screen session is already running: screen -r vmtest" >&2; exit 1; }
+    rest=(); for a in "${args[@]}"; do [[ "$a" == --screen ]] || rest+=("$a"); done
+    screen -dmS vmtest bash -c "$(printf '%q ' "$0" "${rest[@]}"); echo; echo 'Done (summary: ~/vms/last-test.txt). Press Enter to close.'; read -r _"
+    echo "Running in the screen session vmtest: screen -r vmtest (Ctrl-a d to leave it running); the summary lands in ~/vms/last-test.txt"
+    exit 0
+fi
+if [[ ${#loaders[@]} -eq 0 && ${#suites[@]} -eq 0 ]] && ! $want_boot; then
+    want_boot=true
+    for d in cli menu hw installer toggles; do [[ -d "$repo/share/vmtest/$d" ]] && suites+=("$d"); done
+fi
 # What the ISO advertises: the boot loaders calamares-online.sh keeps.
 advertised="$(sed -n 's/.*"bootloader:\([^"]*\)".*/\1/p' "$iso_repo/archiso/airootfs/usr/local/bin/calamares-online.sh" 2>/dev/null | head -n 1)"
 [[ -n "$advertised" ]] || { echo "Can't read the advertised boot loaders from $iso_repo (calamares-online.sh)" >&2; exit 2; }
-[[ ${#loaders[@]} -gt 0 ]] || read -r -a loaders <<< "$advertised"
+$want_boot && [[ ${#loaders[@]} -eq 0 ]] && read -r -a loaders <<< "$advertised"
 tested="limine systemd-boot grub"   # the loaders vmbootloadertest.sh has a way to boot the other kernel for
-missing=0
+summary="$HOME/vms/last-test.txt"
+{
+echo "vmtest.sh $(date '+%F %T') branch $(git -C "$repo" branch --show-current) $(git -C "$repo" rev-parse --short HEAD)"
+total=0
 for l in $advertised; do
-    [[ " $tested " == *" $l "* ]] || { echo "FAIL the ISO advertises $l, but there is no test for it (scripts/vmbootloadertest.sh)"; missing=$((missing + 1)); }
+    [[ " $tested " == *" $l "* ]] || { echo "FAIL the ISO advertises $l, but there is no test for it (scripts/vmbootloadertest.sh)"; total=$((total + 1)); }
 done
-total=$missing
-# No human is needed: headless; the scripts share one Konsole (common.sh, $TEST_LOG).
 for l in "${loaders[@]}"; do
-    "$here/vmbootloadertest.sh" "$l" $install $window > "/tmp/vmtest-$l.out" 2>&1; rc=$?
-    sed -n '/^== /,$p' "/tmp/vmtest-$l.out"
-    total=$((total + rc))
+    bash "$here/vmbootloadertest.sh" "$l" $install $window > "/tmp/vmtest-$l.out" 2>&1; rc=$?
+    sed -n '/^== /,$p' "/tmp/vmtest-$l.out"; total=$((total + rc))
 done
-echo; echo "== total: $total failed check(s) for: ${loaders[*]} (advertised: $advertised)"
-exit "$total"
+for s in "${suites[@]}"; do
+    bash "$here/vmsuite.sh" "$s" $window > "/tmp/vmtest-$s.out" 2>&1; rc=$?
+    sed -n '/^== /,$p' "/tmp/vmtest-$s.out"; total=$((total + rc))
+done
+echo
+echo "SKIP (needs a person, TESTPLAN.md): U1-U9 the app's screens, R2.2 the first desktop login, H-Real the real Steam Machine"
+echo "== total: $total failed check(s); boot loaders: ${loaders[*]:-none}; suites: ${suites[*]:-none}"
+} 2>&1 | tee "$summary"
+exit "$(grep -c '^FAIL' "$summary")"

@@ -4,7 +4,7 @@
 #   scripts/vmsuite.sh <suite> [--window]     suites: the folders in share/vmtest/ (cli, ...)
 # Every block share/vmtest/<suite>/NN-name.sh starts from a fresh `ssh-ready` (vmreset.sh --fremont),
 # runs in the guest as the VM user (repo on /mnt; NN-name.host.sh blocks run on the host instead), and prints PASS/FAIL/SKIP lines; the first
-# comment lines say which TESTPLAN rows it covers. Log: $VM_DIR.<suite>.log. Exit status = FAILs.
+# comment lines say which TESTPLAN rows it covers; `# env: VAR=value` there is set for the VM start (e.g. BIOS_VERSION=F7F0107). Log: $VM_DIR.<suite>.log. Exit status = FAILs.
 # Env: ONLY=<block name prefix> runs just that block; VM_DIR (default ~/vms/steamify-vm), REPO (default ../steamify-cachyos).
 set -uo pipefail
 here="$(cd "$(dirname "$0")" && pwd)"
@@ -23,7 +23,7 @@ printf '\n===== vmsuite.sh %s (%s) =====\n' "$suite" "$(date +%T)"
 for block in "$dir"/*.sh; do
     [[ -z "${ONLY:-}" || "$(basename "$block")" == "$ONLY"* ]] || continue   # ONLY=50: just that block
     printf '\n##### %s %s\n' "$(date +%T)" "$(basename "$block" .sh)"
-    "$here/vmreset.sh" --fremont > /tmp/vmsuite-reset.out 2>&1 || { echo "FAIL vmreset.sh failed: $(tail -n 1 /tmp/vmsuite-reset.out)"; continue; }
+    env $(sed -n 's/^# env: //p' "$block" | head -n 1) "$here/vmreset.sh" --fremont > /tmp/vmsuite-reset.out 2>&1 || { echo "FAIL vmreset.sh failed: $(tail -n 1 /tmp/vmsuite-reset.out)"; continue; }
     if [[ "$block" == *.host.sh ]]; then   # runs on the host (reboots, host scripts); prelude-host.sh has the helpers
         ( . "$repo/share/vmtest/prelude-host.sh"; . "$block" ) 2>&1 | sed -u 's/\x1b\[[0-9;]*m//g'
         continue

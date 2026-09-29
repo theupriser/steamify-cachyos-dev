@@ -36,13 +36,13 @@ R1.9, R1.10, R2.1, G1-G3, F1-F7, H1, H3, H4 (session file), H5, and the boot loa
 Not automatable without a person (stay manual, listed in the summary as SKIP; no screenshot testing): U1-U9,
 R2.2 (first desktop login look), H-Real (real Steam Machine).
 
-- [ ] S1. Framework: `scripts/vmtest.sh` takes suites, resets the VM per block, tallies PASS/FAIL/SKIP,
+- [x] S1. Framework (vmtest.sh runs boot + every suite, --screen, summary in ~/vms/last-test.txt): `scripts/vmtest.sh` takes suites, resets the VM per block, tallies PASS/FAIL/SKIP,
       prints the skipped manual rows; move the loader matrix under suite `boot`
 - [x] S2. Suite `cli` (55 checks pass): G1-G3, F1-F7 (exit codes, `features.state`, boot-desktop unit)
 - [x] S3. Suite `menu` (36 checks pass): R1.1-R1.6, R1.10 with scripted menu input (`vmrun.sh`) and `vmstate.sh` asserts
-- [x] S4. Suite `hw` (68 checks pass; H3 BIOS dry-run still to add): H1, H3 (`WIZARD_BIOS_DRY_RUN=1`), H4, H5, R1.7 (`vmcec.sh --no-sleep`)
-- [ ] S5. Suite `installer`: R2.1 (`vminstallsim.sh`)
-- [ ] S6. R1.8 toggle matrix and R1.9 reboot checks (from the skill), as suite `toggles`
+- [x] S4. Suite `hw` (70 checks pass incl. H3 BIOS dry-run): H1, H3 (`WIZARD_BIOS_DRY_RUN=1`), H4, H5, R1.7 (`vmcec.sh --no-sleep`)
+- [x] S5. Suite `installer` (4 pass): R2.1 (`vminstallsim.sh`)
+- [x] S6. R1.8 toggle matrix as suite `toggles` (42 pass, 1 expected skip); R1.9 reboot checks still to add
 - [ ] S7. TESTPLAN.md: mark which rows are automated (a column or a tag), keep the results log automatic:
       the script appends a line to it (date, branch, suites, counts)
 - [ ] S8. Update the `steam-machine-testing` and `cachyos-vm-testing` skills: "run `scripts/vmtest.sh`" first
