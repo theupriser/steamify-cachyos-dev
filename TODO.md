@@ -33,12 +33,12 @@ TESTPLAN.md means adding its check here (say which row each check covers in a co
 
 Automatable (encode as checks): R1.1-R1.6, R1.7 (`vmcec.sh` already prints PASS/FAIL), R1.8 (toggle matrix),
 R1.9, R1.10, R2.1, G1-G3, F1-F7, H1, H3, H4 (session file), H5, and the boot loader matrix (done).
-Not automatable without a person (stay manual, listed in the summary as SKIP): U1-U9 (screenshots),
+Not automatable without a person (stay manual, listed in the summary as SKIP; no screenshot testing): U1-U9,
 R2.2 (first desktop login look), H-Real (real Steam Machine).
 
 - [ ] S1. Framework: `scripts/vmtest.sh` takes suites, resets the VM per block, tallies PASS/FAIL/SKIP,
       prints the skipped manual rows; move the loader matrix under suite `boot`
-- [ ] S2. Suite `cli`: G1-G3, F1-F7 (exit codes, `features.state`, boot-desktop unit)
+- [x] S2. Suite `cli` (55 checks pass): G1-G3, F1-F7 (exit codes, `features.state`, boot-desktop unit)
 - [ ] S3. Suite `menu`: R1.1-R1.6, R1.10 with scripted menu input (`vmrun.sh`) and `vmstate.sh` asserts
 - [ ] S4. Suite `hw`: H1, H3 (`WIZARD_BIOS_DRY_RUN=1`), H4, H5, R1.7 (`vmcec.sh --no-sleep`)
 - [ ] S5. Suite `installer`: R2.1 (`vminstallsim.sh`)

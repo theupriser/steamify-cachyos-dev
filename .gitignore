@@ -18,6 +18,7 @@ share/*
 !share/vminstall-live.sh
 !share/vminstall-post.sh
 !share/bootloader-test/
+!share/vmtest/
 
 # Belt and braces, anywhere in the tree
 *.iso
