@@ -5,6 +5,7 @@ info() { echo "INFO $*"; }
 pass() { echo "PASS $*"; }; fail() { echo "FAIL $*"; }; skip() { echo "SKIP $*"; }
 sudo mountpoint -q /mnt || sudo mount -t 9p -o trans=virtio,version=9p2000.L repo /mnt
 cd /mnt || exit 1
+export SCRIPT_DIR=/mnt   # steamify.sh sets it; the libs alone read patches/ and services/ from it
 for lib in common state packages login-manager single-user steam-desktop steam-machine fremont-poweroff vram-booster hdmi-refresh cec boot-session vapor-theme steamos-extras bios desktop-shortcut wizard-shortcut steam-game update-notifier; do
     # shellcheck source=/dev/null
     . "lib/$lib.sh" 2>/dev/null

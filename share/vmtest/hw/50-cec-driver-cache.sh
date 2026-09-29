@@ -6,24 +6,25 @@ real="/var/cache/steamify/cros-ec-cec-${CEC_DRIVER_SHA256:0:12}.c"
 [[ -f "$real" ]] || { skip "R1.7 cache: no cached CEC driver on the host (~/vms/pkg-cache/steamify)"; exit 0; }
 dir=$(mktemp -d); sudo chown root: "$dir"; sudo chmod 755 "$dir"   # like /var/cache/steamify: the user checks the cache
 export CEC_DRIVER_URL="file://$real" CEC_DRIVER_CACHE="$dir/cros-ec-cec-${CEC_DRIVER_SHA256:0:12}.c"
-run() { cec_driver_enable 2>&1 | sed 's/\x1b\[[0-9;]*m//g'; }
+errs=""
+run() { out=$(cec_driver_enable 2>&1 | sed 's/\x1b\[[0-9;]*m//g'); errs+=$(grep -B6 '^\[ERROR\]' <<< "$out" | tr '\n' '|'); }   # sets out
 
 # 1. new pin: an older pin's file is there, this one isn't
 sudo touch "$dir/cros-ec-cec-000000000000.c"
-out=$(run)
+run
 grep -q "Downloading Valve" <<< "$out" && pass "R1.7 cache: a new pin downloads its driver" || fail "R1.7 cache: no download for a new pin"
 echo "$CEC_DRIVER_SHA256  $CEC_DRIVER_CACHE" | sha256sum -c --quiet - 2>/dev/null && pass "R1.7 cache: the driver is kept, checksum OK" || fail "R1.7 cache: not kept after the download"
 [[ ! -e "$dir/cros-ec-cec-000000000000.c" ]] && pass "R1.7 cache: the older pin's file is removed" || fail "R1.7 cache: the older pin's file is still there"
 [[ -d "$CEC_DKMS_SRC" ]] && pass "R1.7 cache: the driver is in DKMS" || fail "R1.7 cache: no DKMS source"
 
 # 2. cache hit: no download
-out=$(run)
+run
 grep -q "Downloading Valve" <<< "$out" && fail "R1.7 cache: downloaded again although it's cached" || pass "R1.7 cache: the cached driver is used, no download"
 
 # 3. a damaged file under the right name: downloaded again and replaced
 echo broken | sudo tee "$CEC_DRIVER_CACHE" >/dev/null
-out=$(run)
+run
 grep -q "Downloading Valve" <<< "$out" && echo "$CEC_DRIVER_SHA256  $CEC_DRIVER_CACHE" | sha256sum -c --quiet - 2>/dev/null &&
     pass "R1.7 cache: a damaged cached driver is replaced" || fail "R1.7 cache: a damaged cached driver stays"
-grep -q '^\[ERROR\]' <<< "$out" && fail "R1.7 cache: errors: $(grep -m1 '^\[ERROR\]' <<< "$out")" || pass "R1.7 cache: no errors"
+[[ -z "$errs" ]] && pass "R1.7 cache: no errors in the three runs" || fail "R1.7 cache: errors: $(cut -c1-600 <<< "$errs")"
 sudo rm -rf "$dir"
