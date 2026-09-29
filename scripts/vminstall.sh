@@ -8,7 +8,7 @@
 #   --iso <file> the live ISO (default $VM_DIR/cachyos.iso, e.g. a
 #                Steamify CachyOS build later; it must be archiso-based and
 #                have cachyos-installer)
-# Env: VM_DIR (see common.sh), VM_USER (default: your host username),
+# Env: VM_DIR (see common.sh), VM_USER (default: your host username; theupriser when that is root),
 #      VM_PASSWORD (steamify), VM_SSH_KEY (private key to authorize; default
 #      ~/.ssh/steamify-vm_ed25519, asked once when that doesn't exist), REPO (shared as 9p `repo`, default ../steamify-cachyos),
 #      VM_CACHE (host dir for the packages, default ~/vms/pkg-cache; empty = none),
@@ -21,6 +21,7 @@ set -euo pipefail
 here="$(cd "$(dirname "$0")" && pwd)"
 repo="$(cd "$here/.." && pwd)"
 [[ -n "${VM_USER:-}" ]] || VM_USER="$(id -un)"
+[[ "$VM_USER" != root ]] || VM_USER=theupriser   # root can't be the guest user (WSL runs as root)
 export VM_USER
 . "$here/common.sh"
 # The pacman package cache, on the host and shared by every VM you install
