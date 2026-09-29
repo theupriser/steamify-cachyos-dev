@@ -70,7 +70,9 @@ ssh wsl 'cd ~/projects/steammachine-cachyos-live-iso && rm -rf build out && syst
 Wait in one background command, not a polling loop:
 `ssh wsl 'until ! podman ps -q | grep -q .; do sleep 20; done; tail -c 1500 ~/projects/iso-build.log; ls -la ~/projects/steammachine-cachyos-live-iso/out/desktop/'`.
 Never start a build while `podman ps` shows one. Output:
-`/root/projects/steammachine-cachyos-live-iso/out/desktop/*.iso` (from
+`/root/projects/steammachine-cachyos-live-iso/out/desktop/steamify-cachyos-local-x86_64.iso` (a build by hand
+has no release tag, so it's named `local`, label `STEAMIFY_<version>_LOCAL`; releases are built on the Gitea
+mirror from a GitHub tag, see the ISO repo's `iso-release.yml`) (from
 Windows Explorer: `\\wsl$\<distro>\root\projects\...`). The trailing
 `chown: missing operand` / "unknown error" is harmless. mksquashfs shows no
 progress in the log; the growing `build/iso/arch/x86_64/airootfs.sfs`
