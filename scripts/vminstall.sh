@@ -85,6 +85,8 @@ echo "ISO: $iso  key: $VM_SSH_KEY"
 # --- The ISO's kernel and initramfs, to boot it with our parameters.
 boot="$VM_DIR/iso-boot"
 mkdir -p "$boot"
+# One loop setup at a time: parallel installs (vmtest.sh --install) otherwise get "Device or resource busy".
+exec 9> /tmp/vminstall-iso.lock; flock 9
 if ! command -v udisksctl >/dev/null && [[ $EUID -eq 0 ]]; then
     # No udisks (the WSL box, as root): a plain loop device and mount.
     loop="$(losetup -f -r -P --show "$iso")"
@@ -109,6 +111,7 @@ install -m 644 "$mnt/arch/boot/x86_64/vmlinuz-linux-cachyos" "$mnt/arch/boot/x86
 search="$(grep -rhoE 'archisosearchuuid=[^ ]+' "$mnt/boot" "$mnt/EFI" 2>/dev/null | head -1)"
 [[ -n "$search" ]] || { echo "No archisosearchuuid in the ISO's boot menu." >&2; exit 1; }
 cleanup_loop; trap - EXIT
+flock -u 9; exec 9>&-
 
 # --- What the live system fetches from the host.
 www="$VM_DIR/install-www"
