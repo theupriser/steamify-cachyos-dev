@@ -24,3 +24,26 @@ skills in `.claude/skills/` (vm-install, cachyos-vm-testing, steam-machine-testi
   Branch cleanup: the `steamify-branch-cleanup` skill in `.claude/skills/`.
 - Follow and update `TESTPLAN.md`; every check in `share/vmtest/` says which row it covers.
 - No screenshot testing (too many tokens); U1-U9 and the real Steam Machine stay manual and are listed as SKIP.
+
+## State (2026-09-29; update when it changes)
+- `scripts/vmtest.sh` runs the whole unattended test: boot loaders limine/systemd-boot/grub (`vmbootloadertest.sh`) and the
+  suites cli, menu, hw, installer, toggles (`vmsuite.sh`, checks in `share/vmtest/`). Each passed in its own run: limine 41,
+  systemd-boot 40, grub 40, cli 55, menu 36, hw 70, installer 4, toggles 42 checks.
+- Written but not proven as a whole: the speed-ups (base image + qcow2 overlays, own ssh port per suite, package cache,
+  `VM_MEM=4G`, `MAX_PARALLEL=3`); a complete parallel run has never finished. First job on a new machine: one full
+  `scripts/vmtest.sh --screen`, read `~/vms/last-test.txt`, fix what fails.
+- Open work: `TODO.md` (WSL2 setup R1b/R1c, the GitHub Actions workflow, speed P1-P3).
+
+## Where the tests run
+The tests run on the user's PC (Ryzen 9800X3D, 64 GB, **WSL2**), started from a laptop over ssh (the user's own skill, or
+`scripts/vmtest-remote.sh <ssh-host> [args]`: pulls the pushed branch there, starts `vmtest.sh --screen`, waits for
+`~/vms/last-test.txt`). On WSL check `/dev/kvm`, `.wslconfig` memory (WSL2 defaults to half the RAM), qemu + ovmf + screen,
+`~/vms` on WSL's own ext4; `vminstall.sh` needs `udisksctl` (absent): use bsdtar/7z or copy the VM folders
+(`~/vms/steamify-vm`, `bl-*`, ~35 GB). No desktop there: headless, no Konsole, `screen -r vmtest` to watch.
+
+## Problems found in the Steamify ISO (fix in `steammachine-cachyos-live-iso`, PRs into `feat/steamify`)
+- cachyos-installer leaves systemd-boot with `#timeout 3` and no default entry: a real machine waits in the menu for ever
+  (the test setup papers over it in `share/vminstall-post.sh`).
+- It enables ufw, which drops ssh from the host (the test setup runs `ufw allow 22/tcp`).
+- An installed system's package database can be older than what the installer got (mirror skew): a kernel "update" may
+  downgrade. Not a Steamify bug; noted in the vm-install skill.
