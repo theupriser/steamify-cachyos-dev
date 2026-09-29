@@ -6,7 +6,7 @@
 # changes (checked every 30 s), "ALLDONE" and exits once every started job has its summary line.
 # Expected counts: the last complete run of each (AGENTS.md "State"); update them when checks are added.
 set -uo pipefail
-declare -A expect=([limine]=43 [systemd-boot]=42 [grub]=42 [cli]=55 [menu]=36 [hw]=70 [installer]=4 [toggles]=42)
+declare -A expect=([limine]=43 [systemd-boot]=42 [grub]=42 [cli]=55 [menu]=36 [hw]=77 [installer]=4 [toggles]=42)
 once=false; jobs=()
 for a in "$@"; do [[ "$a" == --once ]] && once=true || jobs+=("$a"); done
 [[ ${#jobs[@]} -gt 0 ]] || jobs=(limine systemd-boot grub cli menu hw installer toggles)
