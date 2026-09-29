@@ -5,6 +5,9 @@ description: Use when working on the Steam Machine CachyOS ISO (repo steammachin
 
 # Steam Machine ISO and Steamify's install-time mode
 
+Releasing the ISO (GitHub tag, built and attached on the Gitea mirror, naming, runner and server settings) is
+the `steamify-iso-release` skill; this one is for building and testing by hand.
+
 A CachyOS live ISO for the Steam Machine that installs Steamify's default
 setup during the install. Two repos:
 

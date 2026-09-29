@@ -4,7 +4,7 @@ Test tooling for Steamify (`../steamify-cachyos`) and the Steam Machine ISO (`..
 VM scripts (`scripts/`, `run.sh`), the automated test (`scripts/vmtest.sh`, checks in `share/vmtest/` and
 `share/bootloader-test/`), `TESTPLAN.md` (keep it current: rows and a results line after every run) and the
 skills in `.claude/skills/` (vm-install, cachyos-vm-testing, steam-machine-testing, steam-machine-iso,
-wsl-build-host, progress-report).
+wsl-build-host, progress-report, steamify-iso-release, steamify-branch-cleanup).
 
 ## Running the tests (do this, don't re-derive it)
 - Everything: `scripts/vmtest.sh --screen` (detached `screen` session `vmtest`), then read only
@@ -35,6 +35,14 @@ wsl-build-host, progress-report).
   qcow2 overlays, own ssh port per job, package cache, `VM_MEM=4G`, `MAX_PARALLEL=3`). On a new machine: one full
   `scripts/vmtest.sh --screen`, read `~/vms/last-test.txt`, fix what fails.
 - Open work: `TODO.md` (the CEC driver download, the GitHub Actions workflow, P3).
+
+## Releases (2026-09-29; details in the `steamify-iso-release` skill)
+- Steamify: `release/X.Y.Z` -> PR into `main` (the user's) -> GitHub release, and the same workflow on the Gitea
+  mirror. A new Steamify release starts the ISO's release (`ISO_DISPATCH_TOKEN`); a CEC driver download is cached.
+- The ISO: GitHub makes the tag `vX.Y.Z-[dev.]YYYY.MM.DD-HHMM` (UTC) and a release with the notes; the Gitea
+  mirror (git.upriser.nl, pull mirror, 10 min) builds on that tag and attaches the 3.2 GB ISO, named after the tag.
+  A release that exists only on the mirror is deleted by its next sync: the tag must come from GitHub.
+- Merged feature/bugfix branches are deleted at once (`gh pr merge --delete-branch`). Push every commit.
 
 ## Where the tests run
 The tests run on the user's PC (Ryzen 9800X3D, 64 GB, **WSL2**), started from a laptop over ssh (the user's own skill, or

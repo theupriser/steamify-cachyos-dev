@@ -138,6 +138,14 @@ lose the executable bit (`chmod --reference` or call scripts with `bash`); a sui
 be a `.host.sh` block; ssh has no Plasma session, the prelude exports one; a one-off network failure can fail
 an install step (LED driver from the AUR), rerun the block before suspecting Steamify.
 
+Gotchas found on 2026-09-29: never ssh to a VM with its `VM_DIR` settings while it installs (a leftover loop, also
+one started from a laptop command that was stopped, saves the *live ISO's* host key in `$VM_DIR/known_hosts` and
+the install then hangs at its first-boot ssh check: `ssh-keygen -R "[localhost]:<port>" -f $VM_DIR/known_hosts`);
+`vminstall.sh` now never uses root as the guest user (WSL runs as root: `theupriser`), takes the ISO's loop
+device under a lock (parallel installs collided), tolerates the poweroff dropping ssh, waits only for its own
+qemu and stops at once when the live system reports `== failed: ...`. A failed install used to look like
+"still installing" for 90 minutes: `vmprogress.sh` shows `INSTALL FAILED: <why>`.
+
 Following a run for the user (a table per VM with a bar and a total, only on a change; their terminal and
 the VM's screen): the `progress-report` skill, with `scripts/vmprogress.sh` as the monitor.
 
@@ -149,7 +157,16 @@ loader has no test). One VM per loader in `~/vms/bl-<loader>` (`--install` build
 Steamify ISO, ~8 min each, ~3 min per test), headless with a Konsole on the logs (`--window` shows the VMs),
 one summary line per loader, `~/vms/bl-<loader>.test.log`, exit status = failed checks. Checks live in
 `share/bootloader-test/*.sh` (one PASS/FAIL line each); the driver is `scripts/vmbootloadertest.sh`.
-Last result: Limine 41, systemd-boot 40, GRUB 40 checks, 0 failed.
+Last result (2026-09-29, ISO with Steamify 2.9.1): Limine 43, systemd-boot 42, GRUB 42 checks, 0 failed.
+The boot entry check (B1, `boot-check.sh`, after every reboot): the system booted through the loader's **own**
+EFI entry (`BootCurrent`, not `auto_created_boot_option`, a real partition GUID not `HD(0,GPT,0000...)`). It
+found that the installer never registered systemd-boot (bootctl skips the EFI variables in a chroot): OVMF then
+tried PXE/HTTP boot/EFI shell first, 4-5 minutes per boot, or "no bootable device". The ISO's `steamify-install`
+now runs `efibootmgr` from the live system (a real partition, first in the order) and mounts the new system's
+`/var/log` (`@log` subvolume) first so its logs (`steamify-install.log`, `steamify-bootentry.log`) survive.
+To read a VM's boot entries without booting it: copy `vars.fd`, `virt-fw-vars -i <copy> --print` (package
+`virt-firmware`). The power-off check accepts "loaded" or "tried at boot: No such device" (journal, not dmesg:
+the VM has no AMD GPIO controller, the module refuses on purpose).
 What only shows up per loader: Limine keeps its images under `/boot/<machine-id>/<kernel>/` and copies one
 only when its content changed (same version = untouched), and `remember_last_entry: yes` overrides
 `default_entry` (the test turns it off and restores it); GRUB's other kernel is picked with

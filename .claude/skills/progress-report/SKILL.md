@@ -49,6 +49,16 @@ against a VM that gets reinstalled saves the live ISO's host key in `$VM_DIR/kno
 install then hangs at its first-boot ssh check ("REMOTE HOST IDENTIFICATION HAS CHANGED"). Never
 ssh to a VM with its `VM_DIR` settings while it installs; fix it with `ssh-keygen -R "[localhost]:<port>" -f $VM_DIR/known_hosts`.
 
+Monitor rules learned on 2026-09-29: **one monitor per job, stop the old one** (`TaskStop`) when a new run
+starts, or every run is reported twice; a job that ends by itself (the ISO build on Gitea, `vmtest.sh`) is
+best watched with a loop that exits on its terminal states and prints only *changes* (a new step, a finished
+job, a FAIL, a new HTTP status), never on a percentage or a PASS count alone. For a Gitea Actions run, poll its
+public log (`.../actions/runs/<run>/jobs/<job>/logs`, see `steamify-iso-release`) and grep for the step names.
+A chain across systems (Steamify release -> ISO tag -> mirror sync -> Gitea build -> download link) is one
+monitor that says each link when it happens and ends on the real check (the download URL answers 200).
+When the tool that runs commands stops answering (auto-mode classifier "no verdict"), retry once, then say so
+and carry on with reading/local work: nothing running on the PC is affected.
+
 ## What the user sees on the PC
 
 - **Their terminal**: stream the running job's log into it (the `showlog` unit, `wsl-build-host`
