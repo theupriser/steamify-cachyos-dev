@@ -30,10 +30,24 @@ curl -fsS "$H/vminstall-post.sh" -o /tmp/vminstall-post.sh || fail "no vminstall
 ) &
 while sleep 20; do up; done &
 
-systemctl is-system-running --wait >/dev/null 2>&1
+# No `systemctl is-system-running --wait`: this script is itself the running
+# kernel-command-line.service job, so the boot never finishes while it waits.
+# The live keyring must exist before pacman-key can sign (the install failed with
+# "no secret key available to sign with" when this ran first).
+for _ in $(seq 120); do systemctl is-active --quiet pacman-init.service && break; sleep 2; done
 nm-online -t 180 >/dev/null || fail "no network"
 # The live ISO's mirror list and keys can be old; the installer's pacstrap needs current ones.
 pacman -Sy --noconfirm archlinux-keyring cachyos-keyring || echo "(keyring update failed, going on)"
+
+# The host's package cache (VM_CACHE, 9p tag `cache`) as pacman's cache: the
+# installer's pacstrap -c uses the live system's, so a second install downloads nothing.
+CACHE=/var/cache/steamify-pkg
+if mkdir -p $CACHE && mount -t 9p -o trans=virtio,version=9p2000.L cache $CACHE 2>/dev/null; then
+    mkdir -p $CACHE/pkg && mount --bind $CACHE/pkg /var/cache/pacman/pkg &&
+        echo "== package cache: $(ls $CACHE/pkg | wc -l) files from the host"
+else
+    CACHE=""; echo "== no package cache (VM_CACHE off)"
+fi
 
 echo "== cachyos-installer"
 cachyos-installer --config /tmp/settings.json || fail "cachyos-installer exited with $?"
@@ -45,6 +59,26 @@ if ! mountpoint -q /mnt; then
     mount "${DEVICE}1" /mnt/boot 2>/dev/null
 fi
 [[ -d "/mnt/home/$VM_USER" ]] || fail "the installer created no /home/$VM_USER"
+
+# Steamify's packages (Steam, ...) install inside the new system: same cache.
+if [[ -n "$CACHE" ]]; then
+    mkdir -p /mnt/var/cache/pacman/pkg && mount --bind $CACHE/pkg /mnt/var/cache/pacman/pkg || echo "(no cache in the new system)"
+fi
+
+# What Calamares does after its users step (shellprocess_steamify): Steamify's
+# setup for the new user. The headless installer skips it, so a Steamify ISO
+# would otherwise leave plain CachyOS. VM_STEAMIFY: the page's choice (ids,
+# comma-separated; empty = its default, everything on; none = skip).
+if [[ -x /usr/local/bin/steamify-install && "${VM_STEAMIFY:-}" != skip ]]; then
+    echo "== steamify-install (${VM_STEAMIFY:-defaults})"
+    /usr/local/bin/steamify-install /mnt "$VM_USER" "${VM_STEAMIFY:-}"
+    cat "/mnt/var/log/steamify-install.log" 2>/dev/null
+    grep -q '^exit: 0' /mnt/var/log/steamify-install.log 2>/dev/null || fail "steamify-install did not finish cleanly"
+else
+    echo "== no steamify-install on this ISO (or VM_STEAMIFY=skip): plain CachyOS"
+fi
+
+mountpoint -q /mnt/var/cache/pacman/pkg && umount /mnt/var/cache/pacman/pkg
 
 echo "== test VM setup"
 cp /tmp/vminstall-post.sh /tmp/vminstall.env /mnt/root/
