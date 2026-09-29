@@ -172,9 +172,11 @@ echo "Installed; snapshot 'clean' taken."
 
 # --- First boot: check it's ssh-ready, then snapshot.
 nohup ./run.sh "${run_flags[@]}" > vm.log 2>&1 &
+vm=$!
 for _ in $(seq 100); do vm_ssh -o ConnectTimeout=3 true 2>/dev/null && break; sleep 3; done
 vm_ssh true || { echo "No SSH after the first boot; see $VM_DIR/vm.log." >&2; exit 1; }
-vm_ssh bash -s << 'REMOTE'
+# The poweroff at the end may drop the connection (ssh exits 255): judge by the ssh-ready line instead.
+out="$(vm_ssh bash -s 2>&1 << 'REMOTE'
 set -e
 if [[ -f /etc/sddm.conf.d/10-gamescope-autologin.conf ]]; then
     # Steamify's gaming mode (gamescope, no Plasma, and it doesn't render in the VM): the login manager has to be up.
@@ -188,7 +190,10 @@ sudo -n true
 echo "ssh-ready: $(id -un)@$(hostname), $(uname -r), $(localectl status | sed -n 's/.*LANG=//p'), $(timedatectl show -p Timezone --value)"
 sudo systemctl poweroff
 REMOTE
-while pgrep -f '^qemu-system' >/dev/null; do sleep 2; done
+)" || true
+printf '%s\n' "$out" | grep -v '^Connection to .* closed'
+grep -q '^ssh-ready: ' <<< "$out" || { echo "The first boot check failed; see above and $VM_DIR/vm.log." >&2; kill $vm 2>/dev/null; exit 1; }
+while kill -0 $vm 2>/dev/null; do sleep 2; done   # this VM only: others may run in parallel
 qemu-img snapshot -c ssh-ready disk.qcow2 && cp vars.fd vars.ssh-ready.fd
 rm -rf "$www"
 echo "Done: snapshots 'clean' and 'ssh-ready' in $VM_DIR."
