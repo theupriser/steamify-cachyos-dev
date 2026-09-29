@@ -17,18 +17,16 @@ dir="$repo/share/vmtest/$suite"
 [[ -d "$dir" ]] || { echo "No suite $suite (folders in share/vmtest/)" >&2; exit 2; }
 . "$here/common.sh"
 log="$VM_DIR.$suite.log"
-# Headless on a desktop: a Konsole following the log (CI has no desktop; vmtest.sh opens its own).
-if [[ -n "${VM_HEADLESS:-}" && -z "${CI:-}${VMTEST_NO_VIEW:-}" && -n "${WAYLAND_DISPLAY:-}${DISPLAY:-}" ]] && command -v konsole >/dev/null; then
-    systemd-run --user -q --collect --unit="vmsuite-view-$suite-$$" konsole --hold -e tail -n +1 -F "$log" >/dev/null 2>&1 || true
-fi
+view_start   # one shared Konsole (common.sh), headless on a desktop
 {
+printf '\n===== vmsuite.sh %s (%s) =====\n' "$suite" "$(date +%T)"
 for block in "$dir"/*.sh; do
     [[ -z "${ONLY:-}" || "$(basename "$block")" == "$ONLY"* ]] || continue   # ONLY=50: just that block
     printf '\n##### %s %s\n' "$(date +%T)" "$(basename "$block" .sh)"
     "$here/vmreset.sh" --fremont > /tmp/vmsuite-reset.out 2>&1 || { echo "FAIL vmreset.sh failed: $(tail -n 1 /tmp/vmsuite-reset.out)"; continue; }
-    cat "$repo/share/vmtest/prelude.sh" "$block" | vm_ssh -o ConnectTimeout=6 -o LogLevel=ERROR bash -s 2>&1 | sed 's/\x1b\[[0-9;]*m//g'
+    cat "$repo/share/vmtest/prelude.sh" "$block" | vm_ssh -o ConnectTimeout=6 -o LogLevel=ERROR bash -s 2>&1 | sed -u 's/\x1b\[[0-9;]*m//g'
 done
-} 2>&1 | tee "$log"
+} 2>&1 | tee "$log" | tee -a "$TEST_LOG"
 fails="$(grep -c '^FAIL' "$log")"
 echo; echo "== $suite: $(grep -c '^PASS' "$log") passed, $fails failed, $(grep -c '^SKIP' "$log") skipped (log: $log)"
 grep '^FAIL' "$log"
