@@ -24,6 +24,9 @@ status() {   # status <job>: "state|pass|fail|finished(0/1)|started(0/1)"
     st=$(grep -aE '^##### ' <<< "$run" | tail -1 | sed 's/^##### [0-9:]* //' | cut -c1-40)
     if [[ "$st" == install* && -f "$dir/install-www/install.log" ]]; then
         st="install $(grep -aoE '^\[ *[0-9.]+%\] [^.(]*' "$dir/install-www/install.log" | tail -1 | sed 's/^\[ *\([0-9]*\)[0-9.]*%\] /\1% /; s/ *$//')"
+        # The live installer's own failure (vminstall-live.sh: "== failed: ..."), or the host side giving up.
+        local why; why=$(grep -ahE '^== failed: ' "$dir/install-www/install.log" "$log" 2>/dev/null | tail -1 | cut -c12-70)
+        [[ -n "$why" ]] && { st="INSTALL FAILED: $why"; f=$((f + 1)); }
     fi
     echo "${st:-starting}|$p|$f|0|1"
 }
