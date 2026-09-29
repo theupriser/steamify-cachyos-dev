@@ -46,7 +46,7 @@ mkdir -p "$VM_DIR"
 iso="${iso:-$VM_DIR/cachyos.iso}"
 [[ -f "$iso" ]] || { echo "No ISO at $iso: run get-iso.sh (in $VM_DIR) or pass --iso <file>." >&2; exit 1; }
 iso="$(cd "$(dirname "$iso")" && pwd)/$(basename "$iso")"
-pgrep -f '^qemu-system' >/dev/null && { echo "A VM is running; power it off first (both use port $VM_PORT)." >&2; exit 1; }
+pgrep -f "[h]ostfwd=tcp::$VM_PORT-" >/dev/null && { echo "A VM is running on port $VM_PORT; power it off first." >&2; exit 1; }
 if [[ -f "$VM_DIR/disk.qcow2" ]]; then
     [[ "$force" == true ]] || { echo "$VM_DIR already has a disk.qcow2; use --force to replace it, or another VM_DIR." >&2; exit 1; }
     read -r -p "Replace $VM_DIR/disk.qcow2 and all its snapshots? Type YES: " answer < /dev/tty

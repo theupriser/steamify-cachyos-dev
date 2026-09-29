@@ -7,6 +7,7 @@
 #   <suite>       cli, menu, hw, installer, toggles (folders in share/vmtest/)
 #   --install     install the boot loader VMs first from the newest Steamify ISO (asks before replacing a disk)
 #   --window      show the VMs' windows (default: headless; one shared Konsole follows ~/vms/test.log)
+#   MAX_PARALLEL=3 (env) VMs at once; the slowest suites start first
 #   --screen      run in a detached `screen` session named vmtest: `screen -r vmtest` to watch, Ctrl-a d to leave
 # The suites run on the plain CachyOS VM ~/vms/steamify-vm (Plasma, from vminstall.sh --iso <CachyOS ISO>
 # with VM_STEAMIFY=skip); the boot loader test on ~/vms/bl-<loader> (Steamify ISO).
@@ -46,19 +47,35 @@ advertised="$(sed -n 's/.*"bootloader:\([^"]*\)".*/\1/p' "$iso_repo/archiso/airo
 $want_boot && [[ ${#loaders[@]} -eq 0 ]] && read -r -a loaders <<< "$advertised"
 tested="limine systemd-boot grub"   # the loaders vmbootloadertest.sh has a way to boot the other kernel for
 summary="$HOME/vms/last-test.txt"
+maxp="${MAX_PARALLEL:-3}"   # VMs at once: 8 GB RAM each, 6 vCPUs each
+# Jobs, the slowest first so the last ones are short: suites, then the boot loaders.
+jobs_list=()
+for s in toggles hw cli menu installer; do [[ " ${suites[*]} " == *" $s "* ]] && jobs_list+=("suite:$s"); done
+for s in "${suites[@]}"; do [[ " toggles hw cli menu installer " == *" $s "* ]] || jobs_list+=("suite:$s"); done
+for l in "${loaders[@]}"; do jobs_list+=("loader:$l"); done
+run_job() {   # run_job <kind:name>: output in /tmp/vmtest-<name>.out, exit status in /tmp/vmtest-<name>.rc
+    local kind="${1%%:*}" name="${1#*:}"
+    if [[ "$kind" == loader ]]; then bash "$here/vmbootloadertest.sh" "$name" $install $window > "/tmp/vmtest-$name.out" 2>&1
+    else bash "$here/vmsuite.sh" "$name" $window > "/tmp/vmtest-$name.out" 2>&1; fi
+    echo $? > "/tmp/vmtest-$name.rc"
+}
 {
 echo "vmtest.sh $(date '+%F %T') branch $(git -C "$repo" branch --show-current) $(git -C "$repo" rev-parse --short HEAD)"
 total=0
 for l in $advertised; do
     [[ " $tested " == *" $l "* ]] || { echo "FAIL the ISO advertises $l, but there is no test for it (scripts/vmbootloadertest.sh)"; total=$((total + 1)); }
 done
-for l in "${loaders[@]}"; do
-    bash "$here/vmbootloadertest.sh" "$l" $install $window > "/tmp/vmtest-$l.out" 2>&1; rc=$?
-    sed -n '/^== /,$p' "/tmp/vmtest-$l.out"; total=$((total + rc))
+[[ ${#suites[@]} -gt 0 ]] && { bash "$here/vmsuite.sh" --prepare || { echo "FAIL no base image for the suites"; total=$((total + 1)); }; }
+rm -f /tmp/vmtest-*.rc
+for job in "${jobs_list[@]}"; do
+    run_job "$job" &
+    while [[ $(jobs -rp | wc -l) -ge $maxp ]]; do wait -n; done
 done
-for s in "${suites[@]}"; do
-    bash "$here/vmsuite.sh" "$s" $window > "/tmp/vmtest-$s.out" 2>&1; rc=$?
-    sed -n '/^== /,$p' "/tmp/vmtest-$s.out"; total=$((total + rc))
+wait
+for job in "${jobs_list[@]}"; do
+    name="${job#*:}"
+    sed -n '/^== /,$p' "/tmp/vmtest-$name.out"
+    total=$((total + $(cat "/tmp/vmtest-$name.rc" 2>/dev/null || echo 1)))
 done
 echo
 echo "SKIP (needs a person, TESTPLAN.md): U1-U9 the app's screens, R2.2 the first desktop login, H-Real the real Steam Machine"

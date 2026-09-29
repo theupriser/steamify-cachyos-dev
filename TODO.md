@@ -47,6 +47,31 @@ R2.2 (first desktop login look), H-Real (real Steam Machine).
       the script appends a line to it (date, branch, suites, counts)
 - [ ] S8. Update the `steam-machine-testing` and `cachyos-vm-testing` skills: "run `scripts/vmtest.sh`" first
 
+## Speed: the full run takes about an hour (target 20-25 min)
+
+Where the time goes: boot loader VMs ~3 min each, every suite block restores a snapshot and reboots
+(~1 min), and every block that applies Steamify downloads Steam and the rest again from the mirrors.
+
+- [~] P1 (implemented, one clean full run still to prove). Package cache for the suite VM: `VM_CACHE` shared as 9p and bound over `/var/cache/pacman/pkg`
+      in `vmreset.sh`/the prelude (as vminstall-live.sh does); downloads only once
+- [~] P2 (implemented: base image + overlays, own port per suite, MAX_PARALLEL=3, VM_MEM=4G; a whole parallel run has not finished yet). Parallel: each suite (and each boot loader) on its own copy of the VM (`cp --reflink` of the disk and vars),
+      own `VM_PORT` and `VM_DIR`; `vmtest.sh` starts them together and waits; watch host CPU (16 cores, 6 vCPUs each)
+- [ ] P3. Fewer resets: merge blocks that only read state (cli 10 + the menu R1.1)
+
+## Run the tests on the PC (9800X3D, 64 GB) from a laptop
+
+- [ ] R1. `scripts/vmtest-remote.sh <ssh-host>` written; try it once: the PC needs the three repos, qemu + OVMF + screen,
+      KVM (on Windows: WSL2 with nested virtualization), the VMs in `~/vms` (`vmtest.sh --install` builds the boot loader
+      VMs, `vminstall.sh --iso <CachyOS ISO>` with `VM_STEAMIFY=skip` the plain one), and the Steamify ISO
+- [ ] R1b. The PC is WSL2 (Windows). To check there: `/dev/kvm` exists (Windows 11, virtualization on in the BIOS,
+      nested virtualization on); `%UserProfile%\.wslconfig` `memory=` is raised (WSL2 defaults to half the RAM = 32 GB;
+      3-4 VMs at 4-8 GB want ~48 GB) and `processors=16`; keep `~/vms` and the repos on WSL's own ext4, not under `/mnt/c`;
+      `sudo apt install qemu-system-x86 ovmf screen`; no desktop there, so runs are headless with no Konsole (`view_start`
+      returns early; watch with `screen -r vmtest` or `tail -f ~/vms/test.log`)
+- [ ] R1c. `vminstall.sh` reads the ISO's kernel with `udisksctl`, which WSL doesn't have: use `bsdtar`/`7z` when there is no
+      udisks (same as CI step 2), or copy the VM directories (`~/vms/steamify-vm`, `bl-*`, ~35 GB) from the laptop with rsync
+- [ ] R2. With 64 GB and 8c/16t: try `MAX_PARALLEL=4` and 8 GB VMs (`VM_MEM=8G`)
+
 ## Boot loader test (local)
 
 - [x] `scripts/vmtest.sh [--install] [loader...]` runs all advertised loaders, `vmbootloadertest.sh` one
