@@ -32,14 +32,14 @@ skills in `.claude/skills/` (vm-install, cachyos-vm-testing, steam-machine-testi
 - Written but not proven as a whole: the speed-ups (base image + qcow2 overlays, own ssh port per suite, package cache,
   `VM_MEM=4G`, `MAX_PARALLEL=3`); a complete parallel run has never finished. First job on a new machine: one full
   `scripts/vmtest.sh --screen`, read `~/vms/last-test.txt`, fix what fails.
-- Open work: `TODO.md` (WSL2 setup R1b/R1c, the GitHub Actions workflow, speed P1-P3).
+- Open work: `TODO.md` (WSL2 setup R1b, the GitHub Actions workflow, speed P1-P3).
 
 ## Where the tests run
 The tests run on the user's PC (Ryzen 9800X3D, 64 GB, **WSL2**), started from a laptop over ssh (the user's own skill, or
 `scripts/vmtest-remote.sh <ssh-host> [args]`: pulls the pushed branch there, starts `vmtest.sh --screen`, waits for
-`~/vms/last-test.txt`). On WSL check `/dev/kvm`, `.wslconfig` memory (WSL2 defaults to half the RAM), qemu + ovmf + screen,
-`~/vms` on WSL's own ext4; `vminstall.sh` needs `udisksctl` (absent): use bsdtar/7z or copy the VM folders
-(`~/vms/steamify-vm`, `bl-*`, ~35 GB). No desktop there: headless, no Konsole, `screen -r vmtest` to watch.
+`~/vms/last-test.txt`). WSL specifics (access `ssh wsl` = root@10.0.0.36, keep the Arch window open or WSL shuts
+down, syncing from the laptop, the podman ISO build, VM windows through WSLg, output in the user's WSL terminal, no GPU
+passthrough): `.claude/skills/wsl-build-host/SKILL.md`. `vminstall.sh` works there without udisks (losetup as root).
 
 ## Problems found in the Steamify ISO (fix in `steammachine-cachyos-live-iso`, PRs into `feat/steamify`)
 - cachyos-installer leaves systemd-boot with `#timeout 3` and no default entry: a real machine waits in the menu for ever
