@@ -35,6 +35,7 @@ setup during the install. Two repos:
 
 The user watches the Steam Machine over Moonlight: run builds and tests in a
 Konsole on its desktop (or open one that follows the log), never hidden.
+Progress in the conversation: the `progress-report` skill (a table, only on a change).
 
 Open that Konsole only when none follows the log yet: `tail -F` picks up
 each new build's log by itself, so one window serves every build (check with

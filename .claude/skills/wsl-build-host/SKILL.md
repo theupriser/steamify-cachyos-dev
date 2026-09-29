@@ -99,3 +99,7 @@ so it can be stopped:
 stop with `systemctl stop showlog` (Ctrl+C there doesn't). Tell the user
 not to type there while it runs. A header printed before a busy log scrolls
 away at once.
+
+Reporting progress (the table, only on a change), a headless VM's screen in a
+window (`scripts/vmview.py`) and looking into a stuck job: the
+`progress-report` skill.

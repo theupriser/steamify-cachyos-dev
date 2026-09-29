@@ -3,7 +3,8 @@
 Test tooling for Steamify (`../steamify-cachyos`) and the Steam Machine ISO (`../steammachine-cachyos-live-iso`):
 VM scripts (`scripts/`, `run.sh`), the automated test (`scripts/vmtest.sh`, checks in `share/vmtest/` and
 `share/bootloader-test/`), `TESTPLAN.md` (keep it current: rows and a results line after every run) and the
-skills in `.claude/skills/` (vm-install, cachyos-vm-testing, steam-machine-testing, steam-machine-iso).
+skills in `.claude/skills/` (vm-install, cachyos-vm-testing, steam-machine-testing, steam-machine-iso,
+wsl-build-host, progress-report).
 
 ## Running the tests (do this, don't re-derive it)
 - Everything: `scripts/vmtest.sh --screen` (detached `screen` session `vmtest`), then read only
@@ -11,7 +12,8 @@ skills in `.claude/skills/` (vm-install, cachyos-vm-testing, steam-machine-testi
   `scripts/vmtest.sh cli hw`, `boot`, `limine`. From another machine: `scripts/vmtest-remote.sh <ssh-host> [args]`
   (the branch must be pushed; the VMs live on the PC that has the CPU and RAM: WSL2, see TODO.md R1b).
 - Read `.claude/skills/vm-install/SKILL.md` before touching the scripts; `TODO.md` has the open work.
-- Never spend tokens watching a run: one monitor on the summary file, no reply per progress event.
+- Following a run: one monitor (`scripts/vmprogress.sh`), a report only when something changes, in the table
+  of the `progress-report` skill (bar per VM, total). Never a timed "no change" message.
 - Headless is for automated runs (default in `vmtest.sh`); a VM started by hand for the user has a window.
 - Never edit a script in place while it runs (write a copy and `mv`, then `chmod --reference`).
 - Kill/pgrep patterns: bracket them (`[q]emu`) or your own shell matches itself.

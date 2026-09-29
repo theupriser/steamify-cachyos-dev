@@ -49,6 +49,8 @@ below), never hidden over SSH. When a run was started hidden anyway, open a
 Konsole that follows its log (`tail -n +1 -f <log>`) right away. **Show the
 app too**: start it on the VM's desktop (`systemd-run --user
 /mnt/ui/steamify-ui`) for the screens you test, and screenshot it.
+Long unattended jobs (installs, `vmtest.sh`): report them as the
+`progress-report` skill says.
 
 ## The VM on the Steam Machine
 

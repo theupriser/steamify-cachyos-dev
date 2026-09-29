@@ -138,6 +138,9 @@ lose the executable bit (`chmod --reference` or call scripts with `bash`); a sui
 be a `.host.sh` block; ssh has no Plasma session, the prelude exports one; a one-off network failure can fail
 an install step (LED driver from the AUR), rerun the block before suspecting Steamify.
 
+Following a run for the user (a table per VM with a bar and a total, only on a change; their terminal and
+the VM's screen): the `progress-report` skill, with `scripts/vmprogress.sh` as the monitor.
+
 ## Testing a boot loader: `scripts/vmtest.sh boot`
 
 Run this instead of doing the steps below by hand: `scripts/vmtest.sh [--install] [--window] [loader...]`
