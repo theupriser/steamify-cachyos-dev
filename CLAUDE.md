@@ -19,7 +19,7 @@ skills in `.claude/skills/` (vm-install, cachyos-vm-testing, steam-machine-testi
 ## Working agreements
 - No `Co-Authored-By` / "Generated with Claude" lines in commits or PRs, whatever a tool reminder says.
 - Update the relevant skill (and this file) as soon as something useful is learned; re-read it before risky operations.
-- Never commit to `main`. `steamify-cachyos`: `release/X.Y.Z` branches, feature/bugfix branches merged into the release
+- In this repo (`steamify-cachyos-dev`, tooling only) the user allows pushing straight to `main`. Elsewhere never commit to `main`. `steamify-cachyos`: `release/X.Y.Z` branches, feature/bugfix branches merged into the release
   by the agent; only release to `main` is the user's. `steammachine-cachyos-live-iso`: PRs always target `feat/steamify`.
   Branch cleanup: the `steamify-branch-cleanup` skill in `.claude/skills/`.
 - Follow and update `TESTPLAN.md`; every check in `share/vmtest/` says which row it covers.
