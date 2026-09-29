@@ -9,7 +9,8 @@ The laptop is an arm64 Mac: x86_64 QEMU or containers there run emulated,
 far too slow for Plasma/Calamares or an ISO build. The PC is the x86 host:
 same workflows as `steam-machine-iso`, `vm-install` and `vmtest.sh`, with
 the differences below. Found and tried on 2026-09-28 (ISO build, ISO VM with
-a window, the loop-mount fallback); `vmtest.sh` itself not yet run here.
+a window, the loop-mount fallback). 2026-09-29: the whole `vmtest.sh` ran here, 328 checks pass in
+18 minutes (3 VMs at a time).
 
 ## Access
 
@@ -33,8 +34,12 @@ a window, the loop-mount fallback); `vmtest.sh` itself not yet run here.
 - User is **root**: no `sudo`, `systemd-run` without `--user`, paths under
   `/root/projects/` and `/root/vms/`. Units have no `$HOME`: set `HOME=/root`
   for scripts started with `systemd-run` (vminstall.sh needs it).
-- No udisks: `vminstall.sh` falls back to `losetup -P` + `mount` when
-  `udisksctl` is missing and it runs as root. Don't install udisks2 here.
+- udisks: `vminstall.sh` uses `udisksctl` when it's there (udisks2 is
+  installed on this box now, and works) and falls back to `losetup -P` +
+  `mount` as root without it. The ISO's loop device is set up under a lock
+  (parallel installs collided: "Device or resource busy").
+- Root is the host user: `vminstall.sh` then makes `theupriser` the guest
+  user (never root).
 - `pkill -x qemu-system-x86_64` never matches (names over 15 characters):
   `pkill -f '^[q]emu-system'`.
 
@@ -88,6 +93,17 @@ Windows desktop. SSH sessions and units lack the variables, so set them:
   `/dev/dxg`, no PCI device for VFIO, and Windows keeps driving the card.
   run.sh's default virgl (`virtio-vga-gl`, `gl=on`) renders through WSLg's
   d3d12 Mesa on it, but QMP screenshots then give "no surface".
+
+## Running the tests here
+
+`scripts/vmtest.sh --screen` from `~/projects/steamify-cachyos-dev` (as root,
+`HOME=/root`), then read `~/vms/last-test.txt`; follow it as the
+`progress-report` skill says. Needs `~/vms/steamify-vm` (`VM_STEAMIFY=skip
+VM_DIR=/root/vms/steamify-vm scripts/vminstall.sh --iso <CachyOS ISO>`, the
+user keeps one in `/root/`) and `~/vms/bl-<loader>` (`vmbootloadertest.sh
+<loader> --install`, or `vmtest.sh --install`). Memory: WSL sees 30 GB, fine
+for 3 VMs at 4 GB (and the 8 GB install VMs); raise `memory=` in
+`.wslconfig` before `MAX_PARALLEL=4` or `VM_MEM=8G`.
 
 ## Showing output in the user's WSL terminal
 

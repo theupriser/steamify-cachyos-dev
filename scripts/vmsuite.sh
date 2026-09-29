@@ -95,6 +95,6 @@ done
 vm_stop
 } 2>&1 | tee "$log" | sed -u "s/^/[$suite] /" >> "$TEST_LOG"
 fails="$(grep -c '^FAIL' "$log")"
-echo "== $suite: $(grep -c '^PASS' "$log") passed, $fails failed, $(grep -c '^SKIP' "$log") skipped (log: $log)"
+echo "== $suite: $(grep -c '^PASS' "$log") passed, $fails failed, $(grep -c '^SKIP' "$log") skipped (log: $log)" | tee -a "$log"
 grep '^FAIL' "$log"
 exit "$fails"
