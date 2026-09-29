@@ -43,6 +43,12 @@ Monitor(command: "ssh wsl '~/projects/steamify-cachyos-dev/scripts/vmprogress.sh
 
 Re-arm it when it expires while jobs still run. Turn each event into the table above.
 
+Stopping a background command or monitor on the laptop (TaskStop) does not stop what it started on
+the PC: its remote loop keeps running (`pkill -f` it there). A leftover `until vm_ssh ...` loop
+against a VM that gets reinstalled saves the live ISO's host key in `$VM_DIR/known_hosts`, and the
+install then hangs at its first-boot ssh check ("REMOTE HOST IDENTIFICATION HAS CHANGED"). Never
+ssh to a VM with its `VM_DIR` settings while it installs; fix it with `ssh-keygen -R "[localhost]:<port>" -f $VM_DIR/known_hosts`.
+
 ## What the user sees on the PC
 
 - **Their terminal**: stream the running job's log into it (the `showlog` unit, `wsl-build-host`
