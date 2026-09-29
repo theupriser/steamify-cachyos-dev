@@ -52,9 +52,9 @@ R2.2 (first desktop login look), H-Real (real Steam Machine).
 Where the time goes: boot loader VMs ~3 min each, every suite block restores a snapshot and reboots
 (~1 min), and every block that applies Steamify downloads Steam and the rest again from the mirrors.
 
-- [~] P1 (implemented, one clean full run still to prove). Package cache for the suite VM: `VM_CACHE` shared as 9p and bound over `/var/cache/pacman/pkg`
+- [x] P1 (proven 2026-09-29: full run in 18 min on the PC). Package cache for the suite VM: `VM_CACHE` shared as 9p and bound over `/var/cache/pacman/pkg`
       in `vmreset.sh`/the prelude (as vminstall-live.sh does); downloads only once
-- [~] P2 (implemented: base image + overlays, own port per suite, MAX_PARALLEL=3, VM_MEM=4G; a whole parallel run has not finished yet). Parallel: each suite (and each boot loader) on its own copy of the VM (`cp --reflink` of the disk and vars),
+- [x] P2 (base image + overlays, own port per suite, MAX_PARALLEL=3, VM_MEM=4G; first complete parallel run 2026-09-29: 328 pass, 18 min). Parallel: each suite (and each boot loader) on its own copy of the VM (`cp --reflink` of the disk and vars),
       own `VM_PORT` and `VM_DIR`; `vmtest.sh` starts them together and waits; watch host CPU (16 cores, 6 vCPUs each)
 - [ ] P3. Fewer resets: merge blocks that only read state (cli 10 + the menu R1.1)
 
@@ -63,14 +63,26 @@ Where the time goes: boot loader VMs ~3 min each, every suite block restores a s
 - [ ] R1. `scripts/vmtest-remote.sh <ssh-host>` written; try it once: the PC needs the three repos, qemu + OVMF + screen,
       KVM (on Windows: WSL2 with nested virtualization), the VMs in `~/vms` (`vmtest.sh --install` builds the boot loader
       VMs, `vminstall.sh --iso <CachyOS ISO>` with `VM_STEAMIFY=skip` the plain one), and the Steamify ISO
-- [ ] R1b. The PC is WSL2 (Windows). To check there: `/dev/kvm` exists (Windows 11, virtualization on in the BIOS,
+- [x] R1b (done 2026-09-29: full vmtest.sh run there, 328 pass in 18 min; setup in the wsl-build-host skill). The PC is WSL2 (Windows). To check there: `/dev/kvm` exists (Windows 11, virtualization on in the BIOS,
       nested virtualization on); `%UserProfile%\.wslconfig` `memory=` is raised (WSL2 defaults to half the RAM = 32 GB;
       3-4 VMs at 4-8 GB want ~48 GB) and `processors=16`; keep `~/vms` and the repos on WSL's own ext4, not under `/mnt/c`;
       the distro is Arch (root): `pacman -S qemu-full edk2-ovmf screen`; automated runs are headless with no Konsole
       (`view_start` returns early; watch with `screen -r vmtest` or `tail -f ~/vms/test.log`), a VM for the user gets a
       window through WSLg (see the wsl-build-host skill). Still to do: a first full `vmtest.sh` run there
+- [ ] R1d. Start WSL with Windows (Task Scheduler at logon: `wsl.exe -d <distro> --exec /bin/sleep infinity`, hidden),
+      so the PC runs tests without an open Arch window
 - [x] R1c. `vminstall.sh` without udisks (WSL): `losetup -P` + `mount` when `udisksctl` is missing and it runs as root
 - [ ] R2. With 64 GB and 8c/16t: try `MAX_PARALLEL=4` and 8 GB VMs (`VM_MEM=8G`)
+
+## Found 2026-09-29 (first full run on the PC)
+
+- [ ] B1 check: the loader's own EFI boot entry exists, points to a real partition (not `HD(0,GPT,0000...)`)
+      and was used (`efibootmgr` `BootCurrent`); systemd-boot booted through the fallback path unnoticed
+- [ ] ISO: mount `@log` at `$ROOT/var/log` before `steamify-install` writes its logs (they end up hidden
+      under the mount); PR into `feat/steamify`
+- [x] ISO: systemd-boot's EFI boot entry (efibootmgr from the live system), PR #2 merged
+- [x] vminstall.sh: a poweroff that drops ssh is no failure, wait only for its own VM, ISO loop device under
+      a lock, never root as the guest user
 
 ## Boot loader test (local)
 

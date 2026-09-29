@@ -102,7 +102,7 @@ and started with `--fremont`. Automated: `scripts/vmtest.sh` (see the vm-install
 
 | # | Step | Expect |
 |---|---|---|
-| B1 | first boot after the unattended install | boots by itself (systemd-boot: `timeout`/`default` set by the test setup), SSH answers |
+| B1 | first boot after the unattended install | boots by itself through the loader's own EFI boot entry, no network boot first (systemd-boot: the entry comes from the ISO's `steamify-install` since PR #2; `timeout`/`default` set by the test setup), SSH answers |
 | B2 | Steamify's state, as its own `*_status` functions | gaming, theme, glyphs, single, launcher, notify, poweroff, cec all on |
 | B3 | OS name | `os-release` NAME/PRETTY_NAME are CachyOS's, `lsb-release` has no "with Steamify"; Limine has `TARGET_OS_NAME` |
 | B4 | loader identity, firmware setup | the expected loader; `Boot into FW: supported` (BIOS item) |
@@ -125,6 +125,13 @@ and started with `--fremont`. Automated: `scripts/vmtest.sh` (see the vm-install
   a release it shows the old version; start the branch's app by hand
   (steam-machine-iso skill).
 
+- B1: no check yet that the loader's own EFI entry exists, points to a real partition and was used
+  (`efibootmgr` `BootCurrent`): systemd-boot booted through the disk's fallback path unnoticed until
+  2026-09-29 (a 4-5 minute network boot per boot in OVMF). To add to `share/bootloader-test/`.
+- ISO: `/var/log` is its own btrfs subvolume (`@log`), not mounted at `$ROOT/var/log` when
+  `steamify-install` runs: its logs (`steamify-install.log`, `steamify-bootentry.log`) end up hidden
+  under the mount after boot.
+
 ## Results log
 
 | Date | Branch / version | Blocks | Result |
@@ -135,3 +142,4 @@ and started with `--fremont`. Automated: `scripts/vmtest.sh` (see the vm-install
 | 2026-09-28 | `release/2.7.0` | H-Real | counted as passed: power-off fix, VRAM booster, LEDs, gamescope and Steam Machine support are unchanged since 2.6.0, which passed on the real Steam Machine. HDMI-CEC's change (enabling `cec-audio-control.socket`) passed with the fake TV in the VM; check the TV remote's volume keys on the real TV after updating (HDMI-CEC shows as update) |
 | 2026-09-29 | `feature/vminstall-bootloader` (Steamify ISO 2026.09.28, `--fremont`) | B1-B8 | Limine 41 / systemd-boot 40 / GRUB 40 checks pass. Found on the way (test setup, not Steamify): ufw blocks ssh, systemd-boot has no timeout/default after cachyos-installer |
 | 2026-09-28 | `release/2.8.0` (`feature/defaults-list`) | G1-G3, R1.1, R1.2 | all pass (VM `--fremont`, fake Steam Machine). Bundle shellcheck clean |
+| 2026-09-29 | Steamify 2.9.0 (`steamify-cachyos` main), ISO `feat/steamify` with PR #2 (2026.09.29), dev `main` 5b867f8; on the PC (WSL2) | everything automated: B1-B8 (3 loaders), cli, menu, hw, installer, toggles (`scripts/vmtest.sh`, parallel, `MAX_PARALLEL=3`) | **328 pass, 0 fail** (toggles 42 +1 expected skip, hw 70, cli 55, menu 36, installer 4, Limine 41, systemd-boot 40, GRUB 40) in 18 minutes: the first complete parallel run. Found on the way: systemd-boot had no EFI boot entry (installer's `bootctl` in a chroot), fixed in the ISO (PR #2); `vminstall.sh` fixes for parallel installs and a root host user |
