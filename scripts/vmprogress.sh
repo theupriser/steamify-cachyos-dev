@@ -1,7 +1,7 @@
 #!/bin/bash
 # Progress of test jobs, one line per change (for a monitor; see the progress-report skill).
 #   scripts/vmprogress.sh [--once] [job...]   jobs: limine systemd-boot grub cli menu hw installer toggles (default all)
-# Per job: state (install NN% <stage> / <test step> / done / -), checks passed/expected, failed.
+# Per job (a new install percentage alone doesn't count as a change): state (install NN% <stage> / <test step> / done / -), checks passed/expected, failed.
 # Line: "HH:MM total P/E F failed ;; job | state | P/E | F failed ;; ...". Prints nothing while nothing
 # changes (checked every 30 s), "ALLDONE" and exits once every started job has its summary line.
 # Expected counts: the last complete run of each (AGENTS.md "State"); update them when checks are added.
@@ -38,7 +38,8 @@ while true; do
         line+=" ;; $j | $st | $p/${expect[$j]:-?} | $f failed"
     done
     cur="total $tp/$te $tf failed$line"
-    [[ "$cur" != "$prev" ]] && { echo "$(date +%H:%M) $cur"; prev="$cur"; }
+    key="$(sed -E 's/install [0-9]+% /install /g' <<< "$cur")"   # a new install percentage alone is no change
+    [[ "$key" != "$prev" ]] && { echo "$(date +%H:%M) $cur"; prev="$key"; }
     $once && exit 0
     [[ $running -eq 0 ]] && { echo ALLDONE; exit 0; }
     sleep 30
