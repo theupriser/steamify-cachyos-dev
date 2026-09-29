@@ -69,8 +69,6 @@ Where the time goes: boot loader VMs ~3 min each, every suite block restores a s
       the distro is Arch (root): `pacman -S qemu-full edk2-ovmf screen`; automated runs are headless with no Konsole
       (`view_start` returns early; watch with `screen -r vmtest` or `tail -f ~/vms/test.log`), a VM for the user gets a
       window through WSLg (see the wsl-build-host skill). Still to do: a first full `vmtest.sh` run there
-- [-] R1d (left for now, 2026-09-29: the Arch window stays open during runs). Start WSL with Windows (Task Scheduler at logon: `wsl.exe -d <distro> --exec /bin/sleep infinity`, hidden),
-      so the PC runs tests without an open Arch window
 - [x] R1c. `vminstall.sh` without udisks (WSL): `losetup -P` + `mount` when `udisksctl` is missing and it runs as root
 - [ ] R2. With 64 GB and 8c/16t: try `MAX_PARALLEL=4` and 8 GB VMs (`VM_MEM=8G`)
 
