@@ -27,12 +27,7 @@ for l in $advertised; do
     [[ " $tested " == *" $l "* ]] || { echo "FAIL the ISO advertises $l, but there is no test for it (scripts/vmbootloadertest.sh)"; missing=$((missing + 1)); }
 done
 total=$missing
-# No human is needed: headless. One Konsole for all the logs (the loader scripts open none).
-export VMTEST_NO_VIEW=1
-if [[ -z "$window" && -z "${CI:-}" && -n "${WAYLAND_DISPLAY:-}${DISPLAY:-}" ]] && command -v konsole >/dev/null; then
-    logs=(); for l in "${loaders[@]}"; do logs+=("$HOME/vms/bl-$l.test.log"); done
-    systemd-run --user -q --collect --unit="vmtest-view-$$" konsole --hold -e tail -n +1 -F "${logs[@]}" >/dev/null 2>&1 || true
-fi
+# No human is needed: headless; the scripts share one Konsole (common.sh, $TEST_LOG).
 for l in "${loaders[@]}"; do
     "$here/vmbootloadertest.sh" "$l" $install $window > "/tmp/vmtest-$l.out" 2>&1; rc=$?
     sed -n '/^== /,$p' "/tmp/vmtest-$l.out"

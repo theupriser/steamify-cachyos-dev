@@ -42,14 +42,12 @@ stop_vm() {
 }
 start_vm() { stop_vm; cp "$repo/run.sh" "$VM_DIR/run.sh"; (cd "$VM_DIR" && REPO="${REPO:-$repo/../steamify-cachyos}" setsid nohup ./run.sh --fremont > vm.log 2>&1 &); }
 reboot_vm() { gssh 'sudo systemctl reboot' >/dev/null 2>&1; sleep 25; waitssh; }
-# Headless on a desktop: a Konsole following the log (vmtest.sh opens one for all loaders; CI has no desktop).
-if [[ -n "${VM_HEADLESS:-}" && -z "${CI:-}${VMTEST_NO_VIEW:-}" && -n "${WAYLAND_DISPLAY:-}${DISPLAY:-}" ]] && command -v konsole >/dev/null; then
-    systemd-run --user -q --collect --unit="vmtest-view-$loader-$$" konsole --hold -e tail -n +1 -F "$log" >/dev/null 2>&1 || true
-fi
+view_start   # one shared Konsole (common.sh)
 # The guest checks print PASS/FAIL lines; the summary at the end counts them in the log.
 check() { cat; }
 
 {
+printf '\n===== vmbootloadertest.sh %s (%s) =====\n' "$loader" "$(date +%T)"
 if $install; then
     step "install $loader VM in $VM_DIR"
     stop_vm
@@ -112,7 +110,7 @@ b="$(gssh uname -r)"
 
 step "DONE"
 stop_vm
-} 2>&1 | tee "$log" | sed 's/\x1b\[[0-9;]*m//g'
+} 2>&1 | tee "$log" | tee -a "$TEST_LOG" | sed 's/\x1b\[[0-9;]*m//g'
 fails="$(grep -c '^FAIL' "$log")"
 echo; echo "== $loader: $(grep -c '^PASS' "$log") passed, $fails failed (log: $log)"
 grep '^FAIL' "$log"

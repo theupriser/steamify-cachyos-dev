@@ -63,7 +63,7 @@ and wait with an until-loop on the log, e.g.
 
 - Refuses an existing `disk.qcow2` without `--force` (asks YES), and a
   running VM (port 2222).
-- Never edit `vminstall.sh` while it runs: bash reads it as it goes.
+- Never edit a script in place while it runs (bash reads it as it goes; Python `open(p,"w")` and editors that rewrite do this). `sed -i` or writing a copy and `mv` swaps the file: the running one keeps its old copy.
 - Don't match your own wait loop with `pgrep -f`/`pkill -f` on a pattern that
   is part of that loop's command line.
 - Mirror 404s during the install are normal for an older ISO (pacman moves

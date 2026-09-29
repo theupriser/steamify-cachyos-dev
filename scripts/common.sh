@@ -19,3 +19,13 @@ if [[ -z "${VM_SSH_KEY:-}" && -f "$VM_DIR/ssh-key" ]]; then VM_SSH_KEY="$(cat "$
 [[ -n "${VM_SSH_KEY:-}" ]] && VM_SSH_OPTS+=(-i "$VM_SSH_KEY" -o IdentitiesOnly=yes)
 vm_ssh() { ssh -p "$VM_PORT" "${VM_SSH_OPTS[@]}" "$VM_USER@$VM_HOST" "$@"; }
 vm_scp() { scp -q -P "$VM_PORT" "${VM_SSH_OPTS[@]}" "$@"; }
+
+# One Konsole for every test run: it follows $TEST_LOG, which the test scripts append to.
+# Started only when there is a desktop, the run is headless and no such window exists.
+TEST_LOG="${TEST_LOG:-$HOME/vms/test.log}"
+view_start() {
+    [[ -n "${VM_HEADLESS:-}" && -z "${CI:-}" && -n "${WAYLAND_DISPLAY:-}${DISPLAY:-}" ]] && command -v konsole >/dev/null || return 0
+    systemctl --user is-active --quiet vmtest-view 2>/dev/null && return 0
+    mkdir -p "$(dirname "$TEST_LOG")"; touch "$TEST_LOG"
+    systemd-run --user -q --collect --unit=vmtest-view konsole --hold -e tail -n 60 -F "$TEST_LOG" >/dev/null 2>&1 || true
+}

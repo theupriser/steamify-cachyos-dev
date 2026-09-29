@@ -39,7 +39,7 @@ R2.2 (first desktop login look), H-Real (real Steam Machine).
 - [ ] S1. Framework: `scripts/vmtest.sh` takes suites, resets the VM per block, tallies PASS/FAIL/SKIP,
       prints the skipped manual rows; move the loader matrix under suite `boot`
 - [x] S2. Suite `cli` (55 checks pass): G1-G3, F1-F7 (exit codes, `features.state`, boot-desktop unit)
-- [ ] S3. Suite `menu`: R1.1-R1.6, R1.10 with scripted menu input (`vmrun.sh`) and `vmstate.sh` asserts
+- [x] S3. Suite `menu` (36 checks pass): R1.1-R1.6, R1.10 with scripted menu input (`vmrun.sh`) and `vmstate.sh` asserts
 - [ ] S4. Suite `hw`: H1, H3 (`WIZARD_BIOS_DRY_RUN=1`), H4, H5, R1.7 (`vmcec.sh --no-sleep`)
 - [ ] S5. Suite `installer`: R2.1 (`vminstallsim.sh`)
 - [ ] S6. R1.8 toggle matrix and R1.9 reboot checks (from the skill), as suite `toggles`
