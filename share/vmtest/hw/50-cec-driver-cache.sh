@@ -4,7 +4,7 @@
 # limit can't fail this block. Needs the host cache (vmsuite.sh binds ~/vms/pkg-cache/steamify).
 real="/var/cache/steamify/cros-ec-cec-${CEC_DRIVER_SHA256:0:12}.c"
 [[ -f "$real" ]] || { skip "R1.7 cache: no cached CEC driver on the host (~/vms/pkg-cache/steamify)"; exit 0; }
-dir=$(mktemp -d); sudo chown root: "$dir"
+dir=$(mktemp -d); sudo chown root: "$dir"; sudo chmod 755 "$dir"   # like /var/cache/steamify: the user checks the cache
 export CEC_DRIVER_URL="file://$real" CEC_DRIVER_CACHE="$dir/cros-ec-cec-${CEC_DRIVER_SHA256:0:12}.c"
 run() { cec_driver_enable 2>&1 | sed 's/\x1b\[[0-9;]*m//g'; }
 
