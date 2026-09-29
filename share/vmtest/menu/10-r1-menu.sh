@@ -6,6 +6,7 @@ for n in 1 3 4 5 6 7 8 9 10; do grep -qE "^ +$n +[a-z-]+ +\[x\]" <<< "$out" && p
 grep -qE "^ +11 .*\[ \]" <<< "$out" && pass "R1.1 Update BIOS not ticked" || fail "R1.1 Update BIOS ticked"
 grep -q "Boot into: \[gamescope\]" <<< "$out" && pass "R1.1 boots into gamescope by default" || fail "R1.1 boot default is not gamescope"
 # R1.2: everything OK, back in the menu with all on
+info "applying Steamify (installs packages, builds kernel modules: a few minutes)..."
 out=$(menu '\ny\nm\nq\nn\n')
 grep -q '^\[ERROR\]' <<< "$out" && fail "R1.2 errors: $(grep -m1 '^\[ERROR\]' <<< "$out")" || pass "R1.2 no errors"
 grep -q "^\[OK\]" <<< "$out" && pass "R1.2 applied (the run printed [OK] lines)" || fail "R1.2 printed no [OK] line"
