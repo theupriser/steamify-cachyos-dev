@@ -122,7 +122,23 @@ plasmashell (gamescope doesn't render in the VM: a black window is normal).
   cache shared as 9p tag `cache`, bound over pacman's cache in the live system
   and in the new one (Steamify's packages): the first install fills it.
 
-## Testing a boot loader: `scripts/vmtest.sh`
+## The whole automated test: `scripts/vmtest.sh`
+
+`scripts/vmtest.sh [--install] [--window] [--screen] [boot | <loader>... | <suite>...]`: no argument runs
+everything: the boot loader test (below) and every suite in `share/vmtest/` (`cli`, `menu`, `hw`, `installer`,
+`toggles`: the TESTPLAN.md rows that need no person, run by `scripts/vmsuite.sh` on the plain VM
+`~/vms/steamify-vm`, each block from a fresh `ssh-ready`). `--screen` runs it in a detached `screen`
+session (`screen -r vmtest`); output goes to `~/vms/test.log` (one shared Konsole follows it when headless
+on a desktop), the summary to `~/vms/last-test.txt`, exit status = failed checks. Adding a check: a block file
+in `share/vmtest/<suite>/NN-name.sh` (guest side, prelude helpers `pass/fail/skip/info/sf/is/expect_on`) or
+`NN-name.host.sh` (host side, for reboots and host scripts); `# env: VAR=x` in a block sets it for the VM
+start; `ONLY=<prefix> scripts/vmsuite.sh <suite>` runs one block. Rows that need a person (U1-U9, R2.2,
+H-Real) are printed as SKIP at the end. Pitfalls met while building it: atomic file swaps (`os.replace`)
+lose the executable bit (`chmod --reference` or call scripts with `bash`); a suite block that reboots must
+be a `.host.sh` block; ssh has no Plasma session, the prelude exports one; a one-off network failure can fail
+an install step (LED driver from the AUR), rerun the block before suspecting Steamify.
+
+## Testing a boot loader: `scripts/vmtest.sh boot`
 
 Run this instead of doing the steps below by hand: `scripts/vmtest.sh [--install] [--window] [loader...]`
 (default: every loader the ISO advertises, read from `calamares-online.sh`; it fails when an advertised
