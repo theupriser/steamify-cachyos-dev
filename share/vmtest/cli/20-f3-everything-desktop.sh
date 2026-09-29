@@ -1,4 +1,5 @@
 # F3: every item and --boot desktop: all on, the boot-desktop unit enabled, VRAM left out with a warning.
+info "applying Steamify (installs packages, builds kernel modules: a few minutes)..."
 out=$(sf --defaults --options gaming,theme,glyphs,single,launcher,notify,vram,cec,machine,poweroff --boot desktop); rc=$?
 [[ $rc -eq 0 ]] && pass "F3 exit 0" || fail "F3 exit $rc"
 expect_on gaming theme glyphs single launcher notify machine poweroff cec

@@ -1,6 +1,7 @@
 # Sent to the guest in front of every block (scripts/vmsuite.sh): helpers and Steamify's libs.
 # ssh has no Plasma session: the theme item (Vapor layout) needs one (vmrun.sh does the same).
 export XDG_RUNTIME_DIR=/run/user/$(id -u) WAYLAND_DISPLAY=wayland-0 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$(id -u)/bus
+info() { echo "INFO $*"; }
 pass() { echo "PASS $*"; }; fail() { echo "FAIL $*"; }; skip() { echo "SKIP $*"; }
 sudo mountpoint -q /mnt || sudo mount -t 9p -o trans=virtio,version=9p2000.L repo /mnt
 cd /mnt || exit 1

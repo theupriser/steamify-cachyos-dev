@@ -1,4 +1,5 @@
 # F7: on an install, --boot desktop, again, --boot gamescope: only Boot into changes; the menu ticks stay.
+info "applying Steamify (installs packages, builds kernel modules: a few minutes)..."
 sf --defaults --options gaming,theme,single,launcher,notify,machine,poweroff >/dev/null
 base=$(ticks | sed 's/boot //')
 sf --boot desktop >/dev/null; rc=$?

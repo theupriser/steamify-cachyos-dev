@@ -1,4 +1,5 @@
 # F4: --options theme,single,machine --boot desktop: single brings the conversion; the rest stays off.
+info "applying Steamify (installs packages, builds kernel modules: a few minutes)..."
 sf --defaults --options theme,single,machine --boot desktop >/dev/null; rc=$?
 [[ $rc -eq 0 ]] && pass "F4 exit 0" || fail "F4 exit $rc"
 expect_on gaming theme single machine
