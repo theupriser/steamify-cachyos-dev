@@ -34,7 +34,7 @@ wsl-build-host, progress-report).
 - 2026-09-29, on the PC (WSL2): the first complete parallel run, **328 pass, 0 fail in 18 minutes** (base image +
   qcow2 overlays, own ssh port per job, package cache, `VM_MEM=4G`, `MAX_PARALLEL=3`). On a new machine: one full
   `scripts/vmtest.sh --screen`, read `~/vms/last-test.txt`, fix what fails.
-- Open work: `TODO.md` (the B1 boot entry check, the ISO's hidden `@log` logs, WSL start with Windows R1d, the
+- Open work: `TODO.md` (the B1 boot entry check, the ISO's hidden `@log` logs, the
   GitHub Actions workflow, P3).
 
 ## Where the tests run
