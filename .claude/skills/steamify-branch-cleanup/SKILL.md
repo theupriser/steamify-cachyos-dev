@@ -12,6 +12,12 @@ Rules:
 - Never touch unmerged branches; list them and report instead.
 - Never commit or merge to main.
 
+Merging a feature/bugfix PR yourself (into a release branch, or `feat/steamify` in the ISO repo): delete the
+branch at once, remote and local (`gh pr merge N --merge --delete-branch`, then `git branch -D`, `git fetch
+--prune`); the user asked for this on 2026-09-29. Release branches are never deleted (kept as history next to
+their tags). Unmerged old branches (`feat/vram-booster`, `refactor/qml-screens`, `backup/*`) are reported, not
+touched. The GitHub-side `release delete <tag> --cleanup-tag` is how test ISO releases go.
+
 Steps:
 1. `git fetch --all --tags --prune`
 2. `git checkout main && git merge --ff-only origin/main`

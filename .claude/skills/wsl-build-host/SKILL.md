@@ -1,6 +1,6 @@
 ---
 name: wsl-build-host
-description: Use when building or testing the Steam Machine ISO, or running the VM tests (vmtest.sh), on the user's Windows PC - Arch Linux in WSL2 (`ssh wsl`), with podman, QEMU + KVM and WSLg windows on the Windows desktop. Covers access, syncing working trees from the laptop, the podman ISO build as root, VM windows vs headless, showing output in the user's WSL terminal, and the WSL pitfalls (closing the window kills it, no udisks, no GPU passthrough).
+description: Use when building or testing the Steam Machine ISO, or running the VM tests (vmtest.sh), on the user's Windows PC - Arch Linux in WSL2 (`ssh wsl`), with podman, QEMU + KVM and WSLg windows on the Windows desktop. Covers access, syncing working trees from the laptop, the podman ISO build as root, VM windows vs headless, showing output in the user's WSL terminal, freeing disk space, and the WSL pitfalls (closing the window kills it, no GPU passthrough).
 ---
 
 # WSL build host (Arch on WSL2, the Windows PC)
@@ -95,6 +95,18 @@ Windows desktop. SSH sessions and units lack the variables, so set them:
   `/dev/dxg`, no PCI device for VFIO, and Windows keeps driving the card.
   run.sh's default virgl (`virtio-vga-gl`, `gl=on`) renders through WSLg's
   d3d12 Mesa on it, but QMP screenshots then give "no surface".
+
+## Freeing disk space
+
+Everything here is re-creatable (VMs, `~/vms/pkg-cache`, `~/projects/iso-cache`, `build/`, the podman image):
+`rm -rf` them when the VMs aren't running (`pgrep -f "^[q]emu"`), `podman system prune -a -f`,
+`pacman -Scc --noconfirm`, `fstrim -av`. That freed 68 GB inside WSL (81 -> 13 GB), but Windows only gets it
+back when the vhdx is sparse: in an admin PowerShell `wsl --shutdown`, `wsl --manage archlinux --set-sparse
+true` (seconds), reopen the Arch window, `fstrim -av` again; else `compact vdisk` in diskpart. A rebuild costs
+the caches: a full `vmtest.sh --install` (three loader VMs ~12 min in parallel, the suite VM ~12 min from a
+CachyOS ISO the user keeps in `/root/`), and an ISO build ~6-8 min. Don't `wsl --shutdown` while a job runs.
+Hand-built ISOs are called `steamify-cachyos-local-x86_64.iso`; releases are built on the Gitea mirror
+(`steamify-iso-release` skill). Windows starting WSL at logon is the user's own business, not Steamify's.
 
 ## Running the tests here
 
