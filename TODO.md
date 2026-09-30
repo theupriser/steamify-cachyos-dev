@@ -10,8 +10,8 @@ PR into the release branch. Tick items off as they're done.
 - [x] 1. `run.sh`: headless mode (`VM_HEADLESS=1` -> `-display none`, plain virtio-vga); still to do: make `vmtest.sh` and `vmbootloadertest.sh` headless by default (`--window` opts out, a log Konsole opens on a desktop, CI opens none) and copy the repo's run.sh into `$VM_DIR` before starting
 - [ ] 2. `vminstall.sh`: read the ISO's kernel/initramfs without `udisksctl` (bsdtar/7z when there is no session)
 - [ ] 3. `vminstall.sh` / `vmbootloadertest.sh`: no `/dev/tty` prompts and no `pgrep` on the whole host in CI (`CI=1`)
-- [ ] 4. Where the ISO comes from: newest artifact of `steammachine-cachyos-live-iso`'s `build.yml`
-      (`gh run download -R theupriser/steammachine-cachyos-live-iso`), or a `workflow_dispatch` input (run id / URL)
+- [ ] 4. Where the ISO comes from: newest artifact of `steamify-cachyos-live-iso`'s `build.yml`
+      (`gh run download -R theupriser/steamify-cachyos-live-iso`), or a `workflow_dispatch` input (run id / URL)
 - [ ] 5. `.github/workflows/bootloader-test.yml`: matrix over `limine, systemd-boot, grub`; steps: install
       qemu + ovmf, enable /dev/kvm, fetch the ISO, run the script, upload `~/vms/bl-<loader>.test.log` as an artifact
 - [ ] 6. Runner limits: disk (sparse 60 GB qcow2, free space check), RAM (8 GB VM on a 16 GB runner), timeout (60 min)
