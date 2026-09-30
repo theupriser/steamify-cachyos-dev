@@ -19,6 +19,7 @@
 # The VM's user and key are recorded in $VM_DIR (vm-user, ssh-key) for the
 # other scripts. Never touches your existing SSH keys or ~/.ssh/known_hosts.
 set -euo pipefail
+[[ -n "${CI:-}" ]] && export VM_HEADLESS=1   # no display in CI (QEMU fails with "OpenGL is not supported by the display")
 here="$(cd "$(dirname "$0")" && pwd)"
 repo="$(cd "$here/.." && pwd)"
 [[ -n "${VM_USER:-}" ]] || VM_USER="$(id -un)"
