@@ -92,7 +92,7 @@ if command -v bsdtar >/dev/null; then
     # No loop device, no udisks, no root: libarchive reads the ISO9660 image directly (a CI container has no
     # loop partition nodes, so the mounts below can't work there).
     mnt="$(mktemp -d)"
-    cleanup_loop() { rm -rf "$mnt"; }
+    cleanup_loop() { chmod -R u+rwX "$mnt" 2>/dev/null || true; rm -rf "$mnt" 2>/dev/null || true; }   # the ISO's files come out read-only
     trap cleanup_loop EXIT
     bsdtar -xf "$iso" -C "$mnt" arch/boot/x86_64/vmlinuz-linux-cachyos arch/boot/x86_64/initramfs-linux-cachyos.img boot EFI 2>/dev/null || true
     [[ -f "$mnt/arch/boot/x86_64/vmlinuz-linux-cachyos" ]] || { echo "bsdtar found no kernel in the ISO." >&2; exit 1; }
