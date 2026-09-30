@@ -115,7 +115,11 @@ b="$(gssh uname -r)"
 step "DONE"
 stop_vm
 } 2>&1 | tee "$log" | tee >(sed -u "s/^/[$loader] /" >> "$TEST_LOG") | sed 's/\x1b\[[0-9;]*m//g'
+rc=${PIPESTATUS[0]}   # the test itself: an abort (exit inside the braces) must not pass as 0 failed checks
 fails="$(grep -c '^FAIL' "$log")"
+if [[ $rc -ne 0 && $fails -eq 0 ]]; then
+    echo "FAIL $loader aborted (exit $rc): $(grep -v '^$' "$log" | tail -n 1)" | tee -a "$log"; fails=1
+fi
 echo; echo "== $loader: $(grep -c '^PASS' "$log") passed, $fails failed (log: $log)"
 grep '^FAIL' "$log"
 exit "$fails"
