@@ -3,7 +3,7 @@
 # update the repo there, start scripts/vmtest.sh in a detached `screen`, wait for the summary, print it.
 #   scripts/vmtest-remote.sh <ssh-host> [--no-wait] [vmtest.sh args...]     e.g. scripts/vmtest-remote.sh pc cli hw
 # The branch you are on must be pushed (the remote pulls it). The remote needs this repo, ../steamify-cachyos,
-# ../steammachine-cachyos-live-iso (for the loader list and the ISO), qemu + OVMF + screen, KVM, and the VMs in
+# ../steamify-cachyos-live-iso (for the loader list and the ISO), qemu + OVMF + screen, KVM, and the VMs in
 # ~/vms (see the vm-install skill). Env: REMOTE_REPO (default ~/projects/steamify/steamify-cachyos-dev).
 set -uo pipefail
 host="${1:?usage: $0 <ssh-host> [--no-wait] [vmtest.sh args...]}"; shift
