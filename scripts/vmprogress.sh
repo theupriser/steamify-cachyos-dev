@@ -1,20 +1,20 @@
 #!/bin/bash
 # Progress of test jobs, one line per change (for a monitor; see the progress-report skill).
-#   scripts/vmprogress.sh [--once] [job...]   jobs: limine systemd-boot grub cli menu hw installer toggles (default all)
+#   scripts/vmprogress.sh [--once] [job...]   jobs: limine systemd-boot grub limine-generic systemd-boot-generic grub-generic cli menu hw installer toggles (default all)
 # Per job (only a new step, a finished job or a FAIL counts as a change): state (install NN% <stage> / <test step> / done / -), checks passed/expected, failed.
 # Line: "HH:MM total P/E F failed ;; job | state | P/E | F failed ;; ...". Prints nothing while nothing
 # changes (checked every 30 s), "ALLDONE" and exits once every started job has its summary line.
 # Expected counts: the last complete run of each (AGENTS.md "State"); update them when checks are added.
 set -uo pipefail
-declare -A expect=([limine]=43 [systemd-boot]=42 [grub]=42 [cli]=55 [menu]=36 [hw]=77 [installer]=4 [toggles]=42)
+declare -A expect=([limine]=43 [systemd-boot]=42 [grub]=42 [cli]=55 [menu]=36 [hw]=77 [installer]=4 [toggles]=42 [limine-generic]=25 [systemd-boot-generic]=25 [grub-generic]=25)
 once=false; jobs=()
 for a in "$@"; do [[ "$a" == --once ]] && once=true || jobs+=("$a"); done
-[[ ${#jobs[@]} -gt 0 ]] || jobs=(limine systemd-boot grub cli menu hw installer toggles)
+[[ ${#jobs[@]} -gt 0 ]] || jobs=(limine systemd-boot grub limine-generic systemd-boot-generic grub-generic cli menu hw installer toggles)
 vms="$HOME/vms"
 
 status() {   # status <job>: "state|pass|fail|finished(0/1)|started(0/1)"
     local j="$1" log dir
-    case "$j" in limine|systemd-boot|grub) log="$vms/bl-$j.test.log" dir="$vms/bl-$j" ;; *) log="$vms/run-$j.log" dir="$vms/run-$j" ;; esac
+    case "$j" in limine|systemd-boot|grub|limine-generic|systemd-boot-generic|grub-generic) log="$vms/bl-$j.test.log" dir="$vms/bl-$j" ;; *) log="$vms/run-$j.log" dir="$vms/run-$j" ;; esac
     [[ -f "$log" ]] || { echo "-|0|0|0|0"; return; }
     local p f st run
     # The logs are appended to: only the latest run counts (from its "===== vm..." header on).

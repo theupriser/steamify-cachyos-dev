@@ -144,6 +144,6 @@ fails="$(grep -c '^FAIL' "$log")"
 if [[ $rc -ne 0 && $fails -eq 0 ]]; then
     echo "FAIL $loader aborted (exit $rc): $(grep -v '^$' "$log" | tail -n 1)" | tee -a "$log"; fails=1
 fi
-echo; echo "== $loader: $(grep -c '^PASS' "$log") passed, $fails failed (log: $log)"
+echo; echo "== $loader$suffix: $(grep -c '^PASS' "$log") passed, $fails failed (log: $log)"
 grep '^FAIL' "$log"
 exit "$fails"
