@@ -52,7 +52,7 @@ pulls the pushed branch on the remote, so it needs a GitHub key there first
 
 ```bash
 cd ~/Projects && rsync -az --exclude out --exclude build \
-  steammachine-cachyos-live-iso steamify-cachyos steamify-cachyos-dev wsl:projects/
+  steamify-cachyos-live-iso steamify-cachyos steamify-cachyos-dev wsl:projects/
 ssh wsl 'find ~/projects -name __pycache__ -prune -exec rm -rf {} +; chown -R root: ~/projects'
 ```
 
@@ -63,14 +63,14 @@ Both fixups are needed: rsync keeps the laptop's uid (git then refuses with
 ## Building the ISO (~8 minutes)
 
 ```bash
-ssh wsl 'cd ~/projects/steammachine-cachyos-live-iso && ./steamify-prepare.sh ~/projects/steamify-cachyos'
-ssh wsl 'cd ~/projects/steammachine-cachyos-live-iso && rm -rf build out && systemd-run --collect -q -u isobuild-$(date +%s) --working-directory=$PWD bash -c "podman run --rm -t --pids-limit=-1 --ulimit nofile=65536:65536 --privileged --network=host -v /root/projects/iso-cache:/var/cache/pacman/pkg -v $PWD:/iso -w /iso docker.io/cachyos/cachyos:latest bash -c '\''pacman-key --init && pacman-key --populate && pacman -Syu --noconfirm --needed archiso mkinitcpio-archiso git squashfs-tools grub sudo && ./build-live-modules.sh && ./build-calamares-modules.sh && { ./buildiso.sh -p desktop -w || ./buildiso.sh -p desktop -c -w; }'\'' > /root/projects/iso-build.log 2>&1"'
+ssh wsl 'cd ~/projects/steamify-cachyos-live-iso && ./steamify-prepare.sh ~/projects/steamify-cachyos'
+ssh wsl 'cd ~/projects/steamify-cachyos-live-iso && rm -rf build out && systemd-run --collect -q -u isobuild-$(date +%s) --working-directory=$PWD bash -c "podman run --rm -t --pids-limit=-1 --ulimit nofile=65536:65536 --privileged --network=host -v /root/projects/iso-cache:/var/cache/pacman/pkg -v $PWD:/iso -w /iso docker.io/cachyos/cachyos:latest bash -c '\''pacman-key --init && pacman-key --populate && pacman -Syu --noconfirm --needed archiso mkinitcpio-archiso git squashfs-tools grub sudo && ./build-live-modules.sh && ./build-calamares-modules.sh && { ./buildiso.sh -p desktop -w || ./buildiso.sh -p desktop -c -w; }'\'' > /root/projects/iso-build.log 2>&1"'
 ```
 
 Wait in one background command, not a polling loop:
-`ssh wsl 'until ! podman ps -q | grep -q .; do sleep 20; done; tail -c 1500 ~/projects/iso-build.log; ls -la ~/projects/steammachine-cachyos-live-iso/out/desktop/'`.
+`ssh wsl 'until ! podman ps -q | grep -q .; do sleep 20; done; tail -c 1500 ~/projects/iso-build.log; ls -la ~/projects/steamify-cachyos-live-iso/out/desktop/'`.
 Never start a build while `podman ps` shows one. Output:
-`/root/projects/steammachine-cachyos-live-iso/out/desktop/steamify-cachyos-local-x86_64.iso` (a build by hand
+`/root/projects/steamify-cachyos-live-iso/out/desktop/steamify-cachyos-local-x86_64.iso` (a build by hand
 has no release tag, so it's named `local`, label `STEAMIFY_<version>_LOCAL`; releases are built on the Gitea
 mirror from a GitHub tag, see the ISO repo's `iso-release.yml`) (from
 Windows Explorer: `\\wsl$\<distro>\root\projects\...`). The trailing

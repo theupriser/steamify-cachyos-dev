@@ -16,7 +16,7 @@
 set -uo pipefail
 here="$(cd "$(dirname "$0")" && pwd)"
 repo="$(cd "$here/.." && pwd)"
-iso_repo="$repo/../steammachine-cachyos-live-iso"
+iso_repo="$repo/../steamify-cachyos-live-iso"
 args=("$@")
 install=""; window=""; screen=false; loaders=(); suites=(); want_boot=false
 for a in "$@"; do

@@ -1,6 +1,6 @@
 ---
 name: steam-machine-iso
-description: Use when working on the Steam Machine CachyOS ISO (repo steammachine-cachyos-live-iso) or Steamify's install-time mode (steamify.sh --defaults, --first-login) - building the ISO in podman (in the test VM, or on the Steam Machine), the Calamares Steamify step, simulating the installer in the test VM, and testing the first desktop login.
+description: Use when working on the Steam Machine CachyOS ISO (repo steamify-cachyos-live-iso) or Steamify's install-time mode (steamify.sh --defaults, --first-login) - building the ISO in podman (in the test VM, or on the Steam Machine), the Calamares Steamify step, simulating the installer in the test VM, and testing the first desktop login.
 ---
 
 # Steam Machine ISO and Steamify's install-time mode
@@ -18,7 +18,7 @@ setup during the install. Two repos:
   first login, and `lib/first-login.sh` leaves a one-time autostart
   (`--first-login`: single user's launcher on the new layout, then the app,
   next to CachyOS Hello). See AGENTS.md there.
-- `steammachine-cachyos-live-iso` (fork of CachyOS-Live-ISO), branch work
+- `steamify-cachyos-live-iso` (fork of CachyOS-Live-ISO), branch work
   never on master:
   - `archiso/airootfs/usr/local/bin/calamares-online.sh` (the installer
     launcher) copies CachyOS's `settings_online.conf` over
@@ -114,14 +114,14 @@ VM: note what differs here. In the VM (`vm_ssh`, visibly in a Konsole there):
 
 ```bash
 sudo pacman -S --needed --noconfirm podman git
-git clone https://github.com/theupriser/steammachine-cachyos-live-iso ~/projects/steammachine-cachyos-live-iso
+git clone https://github.com/theupriser/steamify-cachyos-live-iso ~/projects/steamify-cachyos-live-iso
 sudo mount -t 9p -o trans=virtio,version=9p2000.L repo /mnt     # the Steamify checkout (REPO)
-cd ~/projects/steammachine-cachyos-live-iso && git checkout feat/steamify && ./steamify-prepare.sh /mnt
+cd ~/projects/steamify-cachyos-live-iso && git checkout feat/steamify && ./steamify-prepare.sh /mnt
 ```
 
 then the same `podman run` as below (paths in the VM; `~/projects/iso-build.log`).
 The ISO (~3.2 GB) fits the 60G disk; copy it out with
-`vm_scp "$VM_USER@$VM_HOST:~/projects/steammachine-cachyos-live-iso/out/desktop/*.iso" .`
+`vm_scp "$VM_USER@$VM_HOST:~/projects/steamify-cachyos-live-iso/out/desktop/*.iso" .`
 (`scripts/common.sh`), then install it with `scripts/vminstall.sh --iso`.
 Give the VM more room with a bigger disk if `out/`, `build/` and the package
 cache grow over several builds (`sudo rm -rf build out` between builds).
@@ -130,10 +130,10 @@ cache grow over several builds (`sudo rm -rf build out` between builds).
 
 Only podman is installed on the Steam Machine itself; the build tools live in
 the container. Rootful (loop devices, mounts), so `sudo podman ps` shows it,
-not a rootless podman GUI. Clone: `~/projects/steammachine-cachyos-live-iso`.
+not a rootless podman GUI. Clone: `~/projects/steamify-cachyos-live-iso`.
 
 ```bash
-cd ~/projects/steammachine-cachyos-live-iso
+cd ~/projects/steamify-cachyos-live-iso
 git checkout feat/steamify && ./steamify-prepare.sh ~/projects/steamify-cachyos
 sudo rm -rf build out
 systemd-run --user --collect -q -u isobuild-$(date +%s) --working-directory=$PWD bash -c \
