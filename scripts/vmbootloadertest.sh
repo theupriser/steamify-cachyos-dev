@@ -40,7 +40,7 @@ log="$VM_DIR.test.log"
 step() { printf '\n##### %s %s\n' "$(date +%T)" "$*"; }
 gssh() { vm_ssh -o ConnectTimeout=6 -o LogLevel=ERROR "$@"; }
 gscript() { gssh env "LOADER=$loader" "HARDWARE=$hw" bash -s < "$guest/$1"; }   # the guest's login shell is fish
-waitssh() { local _; for _ in $(seq 60); do gssh 'uptime -p' 2>/dev/null | grep -q '^up' && return 0; sleep 5; done; echo "FAIL no SSH"; return 1; }
+waitssh() { local _; for _ in $(seq 180); do   # up to ~15 minutes: a first boot is slow when several VMs run at once gssh 'uptime -p' 2>/dev/null | grep -q '^up' && return 0; sleep 5; done; echo "FAIL no SSH"; return 1; }
 running() { pgrep -f "[h]ostfwd=tcp::$VM_PORT-" >/dev/null; }
 stop_vm() {
     running || return 0
