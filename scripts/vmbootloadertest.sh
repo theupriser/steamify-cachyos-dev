@@ -90,7 +90,12 @@ gssh 'sudo mkdir -p /var/cache/steamify-pkg /var/cache/steamify; sudo mountpoint
 gssh 'sudo mountpoint -q /mnt || sudo mount -t 9p -o trans=virtio,version=9p2000.L repo /mnt; cd /mnt && nohup bash steamify.sh --defaults --options gaming,theme,glyphs,single,launcher,notify,vram,cec,machine,poweroff --boot gamescope > /tmp/steamify.log 2>&1 < /dev/null &'
 sleep 20
 # [s]: the pattern must not match this ssh command itself.
-for _ in $(seq 90); do gssh 'pgrep -f "[s]teamify.sh --defaults" >/dev/null && echo R || echo D' 2>/dev/null | grep -q D && break; sleep 10; done
+n=0
+for _ in $(seq 90); do
+    gssh 'pgrep -f "[s]teamify.sh --defaults" >/dev/null && echo R || echo D' 2>/dev/null | grep -q D && break
+    (( n++ % 6 == 0 )) && echo "  .. steamify.sh running: $(gssh 'tail -n 1 /tmp/steamify.log' 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g' | cut -c1-110)"
+    sleep 10
+done
 gssh 'sed "s/\x1b\[[0-9;]*m//g" /tmp/steamify.log | grep -E "^\[(WARN|ERROR)\]" | cut -c1-140'
 gssh 'tail -n 1 /tmp/steamify.log | sed "s/\x1b\[[0-9;]*m//g"' | grep -q '^\[OK\] Done' && echo "PASS Steamify finished" || { echo "FAIL Steamify did not finish"; }
 
@@ -132,7 +137,7 @@ fi
 
 step "DONE"
 stop_vm
-} 2>&1 | tee "$log" | tee >(sed -u "s/^/[$loader] /" >> "$TEST_LOG") | sed 's/\x1b\[[0-9;]*m//g'
+} 2>&1 | tee "$log" | tee >(sed -u "s/^/[$loader] /" >> "$TEST_LOG") | sed -u 's/\x1b\[[0-9;]*m//g'
 rc=${PIPESTATUS[0]}   # the test itself: an abort (exit inside the braces) must not pass as 0 failed checks
 fails="$(grep -c '^FAIL' "$log")"
 if [[ $rc -ne 0 && $fails -eq 0 ]]; then
