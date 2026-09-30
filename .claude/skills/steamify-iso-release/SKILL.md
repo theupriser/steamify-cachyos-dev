@@ -23,7 +23,9 @@ repo's `master`; `feat/steamify` is no longer needed.
 2. **The mirror syncs** (git.upriser.nl is a pull mirror of GitHub with **no interval of its own**: every repo's
    `git-upriser-sync.yml` calls its mirror-sync API on every branch and tag push, and iso-1's last step after the tag;
    secrets `GIT_UPRISER_URL`, `GIT_UPRISER_TOKEN`): the tag arrives.
-3. **Gitea, `iso-2-gitea-build.yml`** (`on: push: tags: ['v*']`, skipped on GitHub by `github.server_url`): parses the
+3. **Gitea, `iso-2-gitea-build.yml`** (`workflow_dispatch` only, started by iso-1's last step through Gitea's dispatch API with
+   `{"ref": "refs/tags/<tag>"}` (the **full** ref: a bare tag name answers 404) and the input `steamify_ref`; a tag push
+   starts nothing; skipped on GitHub by `github.server_url`): parses the
    tag, builds the ISO on the runner with exactly that Steamify (`STEAMIFY_VERSION`), the tag's time (label) and
    the tag without its `v` (`STEAMIFY_ISO_VERSION`: file name, boot menu, `/etc/steammachine-iso-build`), then
    attaches ISO + `.sha256` + `.sha1` + `.pkgs.txt` to the mirror's release for that tag
@@ -39,7 +41,21 @@ repo's `master`; `feat/steamify` is no longer needed.
    label `STEAMIFY_2_9_6_260930` (ISO 9660: 32 chars, `A-Z 0-9 _`). By hand, without a tag: `local`
    (`steamify-cachyos-local-x86_64.iso`, `STEAMIFY_<version>_LOCAL`). The build reads no clock.
 
-Total from a Steamify release to the ISO on Gitea: about 30 minutes (release, tag, sync <=10 min, build 15-20).
+Total from a Steamify release to the ISO on Gitea: about 20 minutes (release, tag, sync in seconds, build ~18).
+
+## Which Steamify goes on the ISO, and the build badge
+
+- `iso-1` input **`steamify_ref`** (a Steamify branch or tag; empty = the newest *published* release). A dev ISO from a
+  release branch passes the branch (`bundle.yml` does), so `release/2.9.6` gives a 2.9.6 ISO before `v2.9.6` exists;
+  without it every dev ISO carries the last published version (it kept producing 2.9.5). iso-1 reads `VERSION` from
+  that ref's `steamify.sh`; iso-2 clones the ref and runs `steamify-prepare.sh <checkout>`.
+- **Build badge in the GitHub release:** iso-1 writes `![ISO build](...running-yellow)` at the top of the notes; iso-2's
+  last job `report` (`if: always()`) turns it into succeeded / failed / cancelled (shields.io static badge, linked to the
+  Gitea run) through the GitHub API. Secret **`GH_RELEASE_TOKEN`** on the Gitea repo (Settings -> Actions -> Secrets):
+  fine-grained GitHub token, only `steamify-cachyos-live-iso`, *Contents: read and write*; expires, so renew it. Without
+  it the badge stays "running". Gitea's own `badge.svg` says "no status" for these runs (they run on a tag ref).
+- Secrets in all: GitHub `steamify-cachyos`: `ISO_DISPATCH_TOKEN`, `GIT_UPRISER_URL`, `GIT_UPRISER_TOKEN`; GitHub ISO
+  repo: `GIT_UPRISER_URL`, `GIT_UPRISER_TOKEN`; Gitea ISO repo: `GH_RELEASE_TOKEN`.
 
 ## Why it is split like this (learned the hard way)
 
@@ -48,6 +64,14 @@ Total from a Steamify release to the ISO on Gitea: about 30 minutes (release, ta
   release on a tag that **comes from GitHub survives** every sync, files included (tested with a 0-byte asset).
   Hence: GitHub makes the tag, Gitea only attaches the file. You can't delete a tag on a mirror by hand either.
 - GitHub releases take **2 GB per file**; the ISO is 3.2 GB. So GitHub gets notes and a link, Gitea the file.
+- **A replaced tag starts no run on the mirror.** One ISO per day and kind: iso-1 deletes the day's GitHub release and
+  tag and tags again; the mirror takes the new tag object (same name) but Gitea starts nothing and keeps the old release
+  (same id, new creation time) with the old ISO. So the build is started by dispatch, after the mirror has the new tag
+  object (`GET .../tags/<tag>` id == `git rev-parse refs/tags/<tag>`); iso-2 deletes a leftover release of the tag before
+  it publishes. Retention: at most 10 dev + 10 real releases.
+- **Gitea runner and parallel jobs:** it ignores `max-parallel`, and jobs that start in the same second clone the same
+  action into one shared folder and break each other (`actions/cache` failed): keep parallel jobs free of `uses:`.
+  (The VM tests no longer run there at all: they run locally, `scripts/vmtest.sh`.)
 - **Annotated tags**: a lightweight tag has only its commit's date, so tags on the same commit sort randomly
   on Gitea. UTC is fine (the release name says "UTC"; it is 2 h behind Dutch summer time, and nobody cared).
 - The GitHub release's link is built from the tag alone (`.../releases/download/<tag>/steamify-cachyos-<tag
