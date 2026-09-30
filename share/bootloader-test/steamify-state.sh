@@ -10,8 +10,16 @@ for lib in common state packages login-manager single-user steam-desktop steam-m
     . "lib/$lib.sh" 2>/dev/null
 done
 # Items this Steam Machine VM has on after `--options gaming,theme,glyphs,single,launcher,notify,cec,machine,poweroff`.
-for item in gaming theme glyphs single launcher notify poweroff cec; do
+# HARDWARE=generic (a plain PC): the Steam Machine items (poweroff, cec) must stay off.
+for item in gaming theme glyphs single launcher notify; do
     if "${item}_status" 2>/dev/null; then pass "$item is on (the menu shows it ticked)"; else fail "$item is off"; fi
+done
+for item in poweroff cec; do
+    if [[ "${HARDWARE:-fremont}" == generic ]]; then
+        if "${item}_status" 2>/dev/null; then fail "$item is on, but this is not a Steam Machine"; else pass "$item is off (not a Steam Machine)"; fi
+    else
+        if "${item}_status" 2>/dev/null; then pass "$item is on (the menu shows it ticked)"; else fail "$item is off"; fi
+    fi
 done
 # Steamify never renames the OS (limine-snapper-sync / grub-btrfs read it).
 grep -qx 'NAME="CachyOS Linux"' /etc/os-release && grep -qx 'PRETTY_NAME="CachyOS"' /etc/os-release && pass "os-release NAME and PRETTY_NAME are CachyOS's" || fail "os-release NAME/PRETTY_NAME changed"
