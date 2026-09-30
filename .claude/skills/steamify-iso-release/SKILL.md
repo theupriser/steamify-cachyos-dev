@@ -10,7 +10,7 @@ on git.upriser.nl, GitHub's link to it answers 200.
 
 ## The flow (one tag names everything)
 
-1. **GitHub, `iso-release.yml`** (ISO repo `theupriser/steammachine-cachyos-live-iso`, `workflow_dispatch` only):
+1. **GitHub, `iso-release.yml`** (ISO repo `theupriser/steamify-cachyos-live-iso`, `workflow_dispatch` only):
    takes Steamify's newest release (`X.Y.Z`), the time **now in UTC** and makes an **annotated tag**
    `vX.Y.Z-[dev.]YYYY.MM.DD-HHMM` plus a GitHub release with the changelog notes and the *direct* download link
    on Gitea. `dev.` and a pre-release on `feat/steamify` (test build), none on `master` (a release).
@@ -22,7 +22,7 @@ on git.upriser.nl, GitHub's link to it answers 200.
    attaches ISO + `.sha256` + `.sha1` + `.pkgs.txt` to the mirror's release for that tag
    (`akkuman/gitea-release-action`, the run's own token). Never overwrites a release that already has its ISO.
 4. **Trigger:** by hand (*Actions -> Steamify ISO release (tag) -> Run workflow*, or
-   `gh workflow run iso-release.yml -R theupriser/steammachine-cachyos-live-iso --ref feat/steamify`), or by a
+   `gh workflow run iso-release.yml -R theupriser/steamify-cachyos-live-iso --ref feat/steamify`), or by a
    new Steamify release: `steamify-cachyos`' `bundle.yml` step "Start the Steamify ISO's release" (secret
    `ISO_DISPATCH_TOKEN` there: fine-grained token, only the ISO repo, *Actions: read and write*; without it the
    step is skipped). A push does **not** release (a build is 20 minutes and 3.2 GB).

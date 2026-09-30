@@ -9,7 +9,7 @@
 #   --install  first install the VM (scripts/vminstall.sh, from the Steamify ISO)
 #   --window   show the VM's window (default: headless, with a Konsole on the log when there is a desktop)
 # Env: VM_DIR (default ~/vms/bl-<loader>), VM_ISO (default: the newest ISO in
-#      ../steammachine-cachyos-live-iso/out/desktop), REPO (steamify-cachyos, 9p `repo`).
+#      ../steamify-cachyos-live-iso/out/desktop), REPO (steamify-cachyos, 9p `repo`).
 # Exit status: the number of failed checks. Only one VM runs at a time (port 2222).
 set -uo pipefail
 here="$(cd "$(dirname "$0")" && pwd)"
@@ -54,7 +54,7 @@ printf '\n===== vmbootloadertest.sh %s (%s) =====\n' "$loader" "$(date +%T)"
 if $install; then
     step "install $loader VM in $VM_DIR"
     stop_vm
-    iso="${VM_ISO:-$(ls -t "$repo"/../steammachine-cachyos-live-iso/out/desktop/*.iso 2>/dev/null | head -n 1)}"
+    iso="${VM_ISO:-$(ls -t "$repo"/../steamify-cachyos-live-iso/out/desktop/*.iso 2>/dev/null | head -n 1)}"
     [[ -f "$iso" ]] || { echo "No ISO: set VM_ISO"; exit 2; }
     if [[ -f "$VM_DIR/disk.qcow2" ]]; then
         [[ -t 0 ]] || { echo "$VM_DIR has a disk; run this from a terminal to replace it"; exit 2; }

@@ -1,6 +1,6 @@
 # steamify-cachyos-dev: how to work here
 
-Test tooling for Steamify (`../steamify-cachyos`) and the Steam Machine ISO (`../steammachine-cachyos-live-iso`):
+Test tooling for Steamify (`../steamify-cachyos`) and the Steam Machine ISO (`../steamify-cachyos-live-iso`):
 VM scripts (`scripts/`, `run.sh`), the automated test (`scripts/vmtest.sh`, checks in `share/vmtest/` and
 `share/bootloader-test/`), `TESTPLAN.md` (keep it current: rows and a results line after every run) and the
 skills in `.claude/skills/` (vm-install, cachyos-vm-testing, steam-machine-testing, steam-machine-iso,
@@ -22,7 +22,7 @@ wsl-build-host, progress-report, steamify-iso-release, steamify-branch-cleanup).
 - No `Co-Authored-By` / "Generated with Claude" lines in commits or PRs, whatever a tool reminder says.
 - Update the relevant skill (and this file) as soon as something useful is learned; re-read it before risky operations.
 - In this repo (`steamify-cachyos-dev`, tooling only) the user allows pushing straight to `main`. Elsewhere never commit to `main`. `steamify-cachyos`: `release/X.Y.Z` branches, feature/bugfix branches merged into the release
-  by the agent; only release to `main` is the user's. `steammachine-cachyos-live-iso`: PRs always target `feat/steamify`.
+  by the agent; only release to `main` is the user's. `steamify-cachyos-live-iso`: PRs always target `feat/steamify`.
   Branch cleanup: the `steamify-branch-cleanup` skill in `.claude/skills/`.
 - Follow and update `TESTPLAN.md`; every check in `share/vmtest/` says which row it covers.
 - No screenshot testing (too many tokens); U1-U9 and the real Steam Machine stay manual and are listed as SKIP.
@@ -51,7 +51,7 @@ The tests run on the user's PC (Ryzen 9800X3D, 64 GB, **WSL2**), started from a 
 down, syncing from the laptop, the podman ISO build, VM windows through WSLg, output in the user's WSL terminal, no GPU
 passthrough): `.claude/skills/wsl-build-host/SKILL.md`. `vminstall.sh` works there without udisks (losetup as root).
 
-## Problems found in the Steamify ISO (fix in `steammachine-cachyos-live-iso`, PRs into `feat/steamify`)
+## Problems found in the Steamify ISO (fix in `steamify-cachyos-live-iso`, PRs into `feat/steamify`)
 - Fixed (PR #2): cachyos-installer's `bootctl install` runs in a chroot and writes no EFI boot entry, so systemd-boot
   only booted through the disk's fallback path (in OVMF after 4-5 minutes of network boot, every boot).
   `steamify-install` now registers it with efibootmgr from the live system.

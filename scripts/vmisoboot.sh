@@ -9,7 +9,7 @@
 #   --fresh      a new, empty disk (else the existing one: e.g. boot the
 #                installed system with `./run.sh` in $VM_DIR afterwards)
 #   --iso <file> default: the newest out/desktop/*.iso of the host's
-#                steammachine-cachyos-live-iso checkout
+#                steamify-cachyos-live-iso checkout
 # Env: ISO_VM_DIR (~/vms/iso-vm), ISO_VM_PORT (2223: runs next to the test
 #      VM on 2222).
 set -euo pipefail
@@ -26,8 +26,8 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 if [[ -z "$iso" ]]; then
-    iso="$(ls -t "$(dirname "$repo")"/steammachine-cachyos-live-iso/out/desktop/*.iso 2>/dev/null | head -1)"
-    [[ -n "$iso" ]] || { echo "No ISO in steammachine-cachyos-live-iso/out/desktop: build one (vmisobuild.sh) or pass --iso." >&2; exit 1; }
+    iso="$(ls -t "$(dirname "$repo")"/steamify-cachyos-live-iso/out/desktop/*.iso 2>/dev/null | head -1)"
+    [[ -n "$iso" ]] || { echo "No ISO in steamify-cachyos-live-iso/out/desktop: build one (vmisobuild.sh) or pass --iso." >&2; exit 1; }
 fi
 iso="$(cd "$(dirname "$iso")" && pwd)/$(basename "$iso")"
 mkdir -p "$dir"

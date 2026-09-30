@@ -1,5 +1,5 @@
 #!/bin/bash
-# Build the Steam Machine ISO (steammachine-cachyos-live-iso) in the test VM
+# Build the Steam Machine ISO (steamify-cachyos-live-iso) in the test VM
 # (directly, no container: build-live-modules.sh and build-calamares-modules.sh with sudo, buildiso.sh as
 # the user, it sudos itself),
 # visibly (a Konsole on the VM's desktop follows the log), with the package
@@ -11,7 +11,7 @@
 # gets all host cores but 2 for the build: start it with
 #   VM_CACHE=$VM_DIR/iso-cache VM_CPUS=$(( $(nproc) * 3 / 4 )) scripts/vmreset.sh --fremont
 # Env: VM_DIR (see common.sh), ISO_BRANCH (feat/steamify), ISO_OUT (the host's
-#      steammachine-cachyos-live-iso/out/desktop).
+#      steamify-cachyos-live-iso/out/desktop).
 set -euo pipefail
 here="$(cd "$(dirname "$0")" && pwd)"
 . "$here/common.sh"
@@ -20,7 +20,7 @@ steamify=""
 branch="${ISO_BRANCH:-feat/steamify}"
 # Where the ISO lands: out/desktop of the host's live-ISO checkout (next to
 # this repo), where a local build would put it.
-out="${ISO_OUT:-$(dirname "$(cd "$here/.." && pwd)")/steammachine-cachyos-live-iso/out/desktop}"
+out="${ISO_OUT:-$(dirname "$(cd "$here/.." && pwd)")/steamify-cachyos-live-iso/out/desktop}"
 mkdir -p "$out"
 
 { printf 'branch=%q steamify=%q\n' "$branch" "$steamify"; cat << 'REMOTE'
@@ -41,9 +41,9 @@ mountpoint -q /var/cache/pacman/pkg || sudo mount --bind /var/cache/steamify-iso
 # build fails. mkarchiso uses this mirrorlist, so skip it here.
 sudo sed -i '/archlinux\.cachyos\.org/s/^Server/#Server/' /etc/pacman.d/mirrorlist
 sudo pacman -Sy --needed --noconfirm archiso mkinitcpio-archiso git squashfs-tools grub >/dev/null
-iso=~/projects/steammachine-cachyos-live-iso
+iso=~/projects/steamify-cachyos-live-iso
 if [ -d "$iso/.git" ]; then git -C "$iso" fetch -q && git -C "$iso" checkout -q "$branch" && git -C "$iso" reset -q --hard "origin/$branch"
-else mkdir -p ~/projects && git clone -q -b "$branch" https://github.com/theupriser/steammachine-cachyos-live-iso "$iso"; fi
+else mkdir -p ~/projects && git clone -q -b "$branch" https://github.com/theupriser/steamify-cachyos-live-iso "$iso"; fi
 cd "$iso" && echo "ISO repo: $(git log --oneline -1)"
 ./steamify-prepare.sh $steamify | tail -1
 sudo rm -rf build out
@@ -61,7 +61,7 @@ REMOTE
 } | vm_ssh bash -s
 echo "Building in the VM (its Konsole shows the log)..."
 until vm_ssh 'grep -q "^== BUILD EXIT" ~/projects/iso-build.log'; do sleep 30; done
-iso="$(vm_ssh "bash -c 'ls -t ~/projects/steammachine-cachyos-live-iso/out/desktop/*.iso 2>/dev/null | head -1'")"
+iso="$(vm_ssh "bash -c 'ls -t ~/projects/steamify-cachyos-live-iso/out/desktop/*.iso 2>/dev/null | head -1'")"
 [[ -n "$iso" ]] || { echo "No ISO was built; see ~/projects/iso-build.log in the VM." >&2; exit 1; }
 vm_scp "$VM_USER@$VM_HOST:$iso" "$out/"
 echo "ISO: $out/$(basename "$iso")  (cache: $VM_DIR/iso-cache)"
