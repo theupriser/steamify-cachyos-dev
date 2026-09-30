@@ -5,8 +5,10 @@
 # the old drm.edid_firmware parameter), a kernel update, and a reboot into
 # each of the two kernels. Guest checks: share/bootloader-test/*.sh.
 # All loaders in one go: scripts/vmtest.sh.
-#   scripts/vmbootloadertest.sh <limine|systemd-boot|grub> [--install] [--window]
+#   scripts/vmbootloadertest.sh <limine|systemd-boot|grub> [--install] [--quick] [--window]
 #   --install  first install the VM (scripts/vminstall.sh, from the Steamify ISO)
+#   --quick    only what the ISO's install must get right (B1-B5: boots through its own entry, OS name, loader,
+#              Steamify's state and modules as the install left them): no steamify.sh run, kernel update or reboots
 #   --window   show the VM's window (default: headless, with a Konsole on the log when there is a desktop)
 # Env: VM_DIR (default ~/vms/bl-<loader>), VM_ISO (default: the newest ISO in
 #      ../steamify-cachyos-live-iso/out/desktop), REPO (steamify-cachyos, 9p `repo`).
@@ -15,9 +17,9 @@ set -uo pipefail
 here="$(cd "$(dirname "$0")" && pwd)"
 repo="$(cd "$here/.." && pwd)"
 loader="${1:?usage: $0 <limine|systemd-boot|grub> [--install]}"
-install=false; window=false
+install=false; window=false; quick=false
 for a in "${@:2}"; do
-    case "$a" in --install) install=true ;; --window) window=true ;; *) echo "Unknown argument: $a" >&2; exit 2 ;; esac
+    case "$a" in --install) install=true ;; --quick) quick=true ;; --window) window=true ;; *) echo "Unknown argument: $a" >&2; exit 2 ;; esac
 done
 # No human is needed: headless (no VM window) unless --window. On a desktop a Konsole follows the log.
 $window || export VM_HEADLESS=1
@@ -69,6 +71,11 @@ step "start $loader as a Steam Machine"
 start_vm; waitssh || exit 1
 gssh 'sudo cat /sys/class/dmi/id/product_name' 2>/dev/null
 
+if $quick; then
+    step "the installed system: Steamify's state, OS name, boot loader"; gscript steamify-state.sh | check
+    step "Steamify's modules"; gscript modules.sh | check
+    step "boot and its boot entry"; gscript boot-check.sh | check
+else
 step "Steamify's Steam Machine options"
 gssh 'sudo mkdir -p /var/cache/steamify-pkg /var/cache/steamify; sudo mountpoint -q /var/cache/steamify-pkg || sudo mount -t 9p -o trans=virtio,version=9p2000.L cache /var/cache/steamify-pkg && { sudo mkdir -p /var/cache/steamify-pkg/steamify; sudo mount --bind /var/cache/steamify-pkg/steamify /var/cache/steamify; }' 2>/dev/null
 gssh 'sudo mountpoint -q /mnt || sudo mount -t 9p -o trans=virtio,version=9p2000.L repo /mnt; cd /mnt && nohup bash steamify.sh --defaults --options gaming,theme,glyphs,single,launcher,notify,vram,cec,machine,poweroff --boot gamescope > /tmp/steamify.log 2>&1 < /dev/null &'
@@ -111,6 +118,8 @@ b="$(gssh uname -r)"
 [[ -n "$a" && -n "$b" && "$a" != "$b" ]] && echo "PASS booted both kernels ($a, $b)" || echo "FAIL both boots ran the same kernel ($a, $b)"
 [[ "$loader" == grub ]] && gssh "sudo sed -i 's/^GRUB_DEFAULT=.*/GRUB_DEFAULT=$gg/' /etc/default/grub && sudo grub-mkconfig -o /boot/grub/grub.cfg >/dev/null 2>&1"
 [[ "$loader" == limine ]] && gssh "sudo sed -i -e 's/^default_entry: .*/default_entry: $cur/' -e 's/^remember_last_entry: .*/remember_last_entry: ${rem:-yes}/' /boot/limine.conf"
+
+fi
 
 step "DONE"
 stop_vm
