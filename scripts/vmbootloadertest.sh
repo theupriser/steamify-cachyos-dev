@@ -39,7 +39,7 @@ running() { pgrep -f "[h]ostfwd=tcp::$VM_PORT-" >/dev/null; }
 stop_vm() {
     running || return 0
     # Whichever VM runs: its key and host key are not this VM's.
-    ssh -p "$VM_PORT" -i "$VM_SSH_KEY" -o BatchMode=yes -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o LogLevel=ERROR \
+    ssh -p "$VM_PORT" -i "$(vm_key)" -o BatchMode=yes -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o LogLevel=ERROR \
         "$VM_USER@$VM_HOST" 'sudo systemctl poweroff' >/dev/null 2>&1
     local _; for _ in $(seq 30); do running || return 0; sleep 2; done
     pkill -f "[h]ostfwd=tcp::$VM_PORT-"; sleep 2

@@ -17,8 +17,15 @@ VM_USER="${VM_USER:-theupriser}"
 VM_SSH_OPTS=(-o BatchMode=yes -o "UserKnownHostsFile=$VM_DIR/known_hosts" -o StrictHostKeyChecking=accept-new)
 if [[ -z "${VM_SSH_KEY:-}" && -f "$VM_DIR/ssh-key" ]]; then VM_SSH_KEY="$(cat "$VM_DIR/ssh-key")"; fi
 [[ -n "${VM_SSH_KEY:-}" ]] && VM_SSH_OPTS+=(-i "$VM_SSH_KEY" -o IdentitiesOnly=yes)
-vm_ssh() { ssh -p "$VM_PORT" "${VM_SSH_OPTS[@]}" "$VM_USER@$VM_HOST" "$@"; }
-vm_scp() { scp -q -P "$VM_PORT" "${VM_SSH_OPTS[@]}" "$@"; }
+# The VM's key, looked up at every call: vminstall.sh and vmbootloadertest.sh source this file before the key
+# exists or is chosen (a clean host has no other key the VM would accept).
+vm_key() {
+    if [[ -n "${VM_SSH_KEY:-}" ]]; then printf '%s\n' "$VM_SSH_KEY"
+    elif [[ -f "$VM_DIR/ssh-key" ]]; then cat "$VM_DIR/ssh-key"; fi
+}
+_vm_key_opts() { local k; k="$(vm_key)"; [[ -n "$k" ]] && printf '%s\n' -i "$k" -o IdentitiesOnly=yes; }
+vm_ssh() { local -a k; mapfile -t k < <(_vm_key_opts); ssh -p "$VM_PORT" "${VM_SSH_OPTS[@]}" "${k[@]}" "$VM_USER@$VM_HOST" "$@"; }
+vm_scp() { local -a k; mapfile -t k < <(_vm_key_opts); scp -q -P "$VM_PORT" "${VM_SSH_OPTS[@]}" "${k[@]}" "$@"; }
 
 # One Konsole for every test run: it follows $TEST_LOG, which the test scripts append to.
 # Started only when there is a desktop, the run is headless and no such window exists.
