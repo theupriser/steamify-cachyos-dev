@@ -64,7 +64,10 @@ if $install; then
         [[ "$a" == YES ]] || exit 1
         rm -f "$VM_DIR/disk.qcow2"
     fi
-    VM_BOOTLOADER="$loader" "$here/vminstall.sh" --iso "$iso" < /dev/null || exit 1
+    # --quick checks what the ISO's install leaves on a Steam Machine: install on a VM that reports Fremont hardware
+    # (a generic PC rightly gets no poweroff/CEC items and no DKMS modules).
+    fremont=(); $quick && fremont=(--fremont)
+    VM_BOOTLOADER="$loader" "$here/vminstall.sh" --iso "$iso" "${fremont[@]}" < /dev/null || exit 1
 fi
 
 step "start $loader as a Steam Machine"
