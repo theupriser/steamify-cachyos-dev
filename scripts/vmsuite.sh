@@ -96,7 +96,11 @@ for block in "$dir"/*.sh; do
 done
 vm_stop
 } 2>&1 | tee "$log" | sed -u "s/^/[$suite] /" >> "$TEST_LOG"
+rc=${PIPESTATUS[0]}   # an abort inside the braces must not pass as 0 failed checks
 fails="$(grep -c '^FAIL' "$log")"
+if [[ $rc -ne 0 && $fails -eq 0 ]]; then
+    echo "FAIL $suite aborted (exit $rc): $(grep -v '^$' "$log" | tail -n 1)" | tee -a "$log"; fails=1
+fi
 echo "== $suite: $(grep -c '^PASS' "$log") passed, $fails failed, $(grep -c '^SKIP' "$log") skipped (log: $log)" | tee -a "$log"
 grep '^FAIL' "$log"
 exit "$fails"

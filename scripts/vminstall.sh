@@ -88,7 +88,15 @@ boot="$VM_DIR/iso-boot"
 mkdir -p "$boot"
 # One loop setup at a time: parallel installs (vmtest.sh --install) otherwise get "Device or resource busy".
 exec 9> /tmp/vminstall-iso.lock; flock 9
-if ! command -v udisksctl >/dev/null && [[ $EUID -eq 0 ]]; then
+if command -v bsdtar >/dev/null; then
+    # No loop device, no udisks, no root: libarchive reads the ISO9660 image directly (a CI container has no
+    # loop partition nodes, so the mounts below can't work there).
+    mnt="$(mktemp -d)"
+    cleanup_loop() { rm -rf "$mnt"; }
+    trap cleanup_loop EXIT
+    bsdtar -xf "$iso" -C "$mnt" arch/boot/x86_64/vmlinuz-linux-cachyos arch/boot/x86_64/initramfs-linux-cachyos.img boot EFI 2>/dev/null || true
+    [[ -f "$mnt/arch/boot/x86_64/vmlinuz-linux-cachyos" ]] || { echo "bsdtar found no kernel in the ISO." >&2; exit 1; }
+elif ! command -v udisksctl >/dev/null && [[ $EUID -eq 0 ]]; then
     # No udisks (the WSL box, as root): a plain loop device and mount.
     loop="$(losetup -f -r -P --show "$iso")"
     mnt="$(mktemp -d)"
