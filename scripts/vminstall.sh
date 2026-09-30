@@ -183,7 +183,12 @@ done
 kill -0 $qemu 2>/dev/null && { echo "The install didn't finish in 90 minutes; see $www/install.log." >&2; kill $qemu; exit 1; }
 status="$(cat "$www/status" 2>/dev/null || echo "no status (the live system never reported back)")"
 cp "$www/install.log" install.log 2>/dev/null || true
-[[ "$status" == ok ]] || { echo "Install failed: $status. Log: $VM_DIR/install.log" >&2; exit 1; }
+if [[ "$status" != ok ]]; then
+    echo "Install failed: $status. Log: $VM_DIR/install.log" >&2
+    # In CI only the job log survives: show why.
+    for f in vm-install.log serial.log install.log; do [[ -s "$f" ]] && { echo "--- $f (last 40 lines)" >&2; tail -n 40 "$f" | sed 's/\x1b\[[0-9;]*[A-Za-z]//g' >&2; }; done
+    exit 1
+fi
 qemu-img snapshot -c clean disk.qcow2 && cp vars.fd vars.clean.fd
 echo "Installed; snapshot 'clean' taken."
 
