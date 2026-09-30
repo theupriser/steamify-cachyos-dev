@@ -63,7 +63,8 @@ Where the time goes: boot loader VMs ~3 min each, every suite block restores a s
       (`view_start` returns early; watch with `screen -r vmtest` or `tail -f ~/vms/test.log`), a VM for the user gets a
       window through WSLg (see the wsl-build-host skill). Still to do: a first full `vmtest.sh` run there
 - [x] R1c. `vminstall.sh` without udisks (WSL): `losetup -P` + `mount` when `udisksctl` is missing and it runs as root
-- [ ] R2. With 64 GB and 8c/16t: try `MAX_PARALLEL=4` and 8 GB VMs (`VM_MEM=8G`)
+- [x] R2. `MAX_PARALLEL=5` ran fine on the PC (9800X3D, 8c/16t, 64 GB; reported 2026-09-30). The default stays 3 for smaller
+      machines. Not tried: 8 GB VMs (`VM_MEM=8G`).
 
 ## Found 2026-09-29 (first full run on the PC)
 
