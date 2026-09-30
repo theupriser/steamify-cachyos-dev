@@ -7,7 +7,7 @@
 #   <suite>       cli, menu, hw, installer, toggles (folders in share/vmtest/)
 #   --install     install the boot loader VMs first from the newest Steamify ISO (asks before replacing a disk)
 #   --window      show the VMs' windows (default: headless; one shared Konsole follows ~/vms/test.log)
-#   MAX_PARALLEL=3 (env) VMs at once; the slowest suites start first
+#   MAX_PARALLEL=3 (env) VMs at once (5 worked on a 9800X3D / 64 GB); the slowest suites start first
 #   --screen      run in a detached `screen` session named vmtest: `screen -r vmtest` to watch, Ctrl-a d to leave
 # The suites run on the plain CachyOS VM ~/vms/steamify-vm (Plasma, from vminstall.sh --iso <CachyOS ISO>
 # with VM_STEAMIFY=skip); the boot loader test on ~/vms/bl-<loader> (Steamify ISO).
@@ -47,7 +47,7 @@ advertised="$(sed -n 's/.*"bootloader:\([^"]*\)".*/\1/p' "$iso_repo/archiso/airo
 $want_boot && [[ ${#loaders[@]} -eq 0 ]] && read -r -a loaders <<< "$advertised"
 tested="limine systemd-boot grub"   # the loaders vmbootloadertest.sh has a way to boot the other kernel for
 summary="$HOME/vms/last-test.txt"
-maxp="${MAX_PARALLEL:-3}"   # VMs at once: 8 GB RAM each, 6 vCPUs each
+maxp="${MAX_PARALLEL:-3}"   # VMs at once (4 GB RAM each in the suites, see vmsuite.sh); 5 ran fine on a 9800X3D with 64 GB
 # Jobs, the slowest first so the last ones are short: suites, then the boot loaders.
 jobs_list=()
 for s in toggles hw cli menu installer; do [[ " ${suites[*]} " == *" $s "* ]] && jobs_list+=("suite:$s"); done
