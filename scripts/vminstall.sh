@@ -11,6 +11,7 @@
 # Env: VM_DIR (see common.sh), VM_USER (default: your host username; theupriser when that is root),
 #      VM_PASSWORD (steamify), VM_SSH_KEY (private key to authorize; default
 #      ~/.ssh/steamify-vm_ed25519, asked once when that doesn't exist), REPO (shared as 9p `repo`, default ../steamify-cachyos),
+#      VM_INSTALL_MEM (RAM of the live installer VM only; default VM_MEM, else run.sh's 8G),
 #      VM_CACHE (host dir for the packages, default ~/vms/pkg-cache; empty = none),
 #      VM_STEAMIFY (a Steamify ISO also runs steamify-install: the Steamify page's ids,
 #      empty = defaults, skip = plain CachyOS), VM_BOOTLOADER (limine; or systemd-boot, grub), VM_TIMEZONE (the host's), VM_HOST_IP (the host as the guest sees it,
@@ -162,7 +163,7 @@ append="$search archisobasedir=arch cow_spacesize=10G module_blacklist=pcspkr co
 append+=" systemd.run=\"/usr/bin/bash -c 'curl -fsS --retry 150 --retry-all-errors --retry-delay 2 http://$host_ip:$port/vminstall-live.sh | bash'\""
 append+=" systemd.run_success_action=none systemd.run_failure_action=none systemd.wants=kernel-command-line.service"
 echo "Installing: watch the VM's window, or follow the console with tail -f $VM_DIR/serial.log (install log: $www/install.log)..."
-VM_SERIAL="$VM_DIR/serial.log" VM_ISO="$iso" VM_KERNEL="$boot/vmlinuz-linux-cachyos" VM_INITRD="$boot/initramfs-linux-cachyos.img" VM_APPEND="$append" \
+VM_MEM="${VM_INSTALL_MEM:-${VM_MEM:-}}" VM_SERIAL="$VM_DIR/serial.log" VM_ISO="$iso" VM_KERNEL="$boot/vmlinuz-linux-cachyos" VM_INITRD="$boot/initramfs-linux-cachyos.img" VM_APPEND="$append" \
     ./run.sh install "${run_flags[@]}" > vm-install.log 2>&1 &
 qemu=$!
 # 90 minutes; a failure reported by the live system ends it at once (it stays up after one)
