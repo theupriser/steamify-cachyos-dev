@@ -176,8 +176,11 @@ VM_MEM="${VM_INSTALL_MEM:-${VM_MEM:-}}" VM_SERIAL="$VM_DIR/serial.log" VM_ISO="$
     ./run.sh install "${run_flags[@]}" > vm-install.log 2>&1 &
 qemu=$!
 # 90 minutes; a failure reported by the live system ends it at once (it stays up after one)
+waited=0
 for _ in $(seq 1080); do
     kill -0 $qemu 2>/dev/null || break
+    # A sign of life every minute (CI shows nothing else for ~10 minutes): where the live installer is.
+    (( waited++ % 12 == 0 )) && echo "  .. installing, $((waited * 5 / 60)) min: $(tail -n 1 "$www/install.log" 2>/dev/null | cut -c1-110)"
     [[ -s "$www/status" && "$(cat "$www/status")" != ok ]] && { sleep 5; kill $qemu 2>/dev/null; wait $qemu 2>/dev/null; break; }
     sleep 5
 done
