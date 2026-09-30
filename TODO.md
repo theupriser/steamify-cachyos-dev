@@ -1,28 +1,20 @@
 # TODO
 
-## GitHub Actions: run the boot loader test in CI
+## Tests in CI: dropped 2026-09-30, the VM tests run locally
 
-Goal: every push/PR (and on demand) runs the whole automated test (`scripts/vmtest.sh`, see the next
-section: boot loaders plus every suite) on runners, one job per suite or loader, and fails on any `FAIL` line.
-Public repos, so the free Linux runners with KVM apply. Work on `feature/ci-bootloader-test`,
-PR into the release branch. Tick items off as they're done.
+Decision: `scripts/vmtest.sh` runs on the PC before the release PR, not on GitHub or Gitea runners (too slow, too heavy, and
+not reliable: some GitHub runners had no `/dev/kvm`, nested virtualization made installs slow, the 3 GB ISO had to come
+from the mirror on every run; the Gitea machine has 8 threads). The attempt (steamify-cachyos PR #66, closed, branch
+`feature/vmtest-ci`) left these behind: `vminstall.sh` reads the ISO with `bsdtar` (no loop devices), `CI=1` makes it
+headless, the VM's ssh key is looked up at every call, an aborted test counts as a failure, progress lines while a test runs.
 
-- [x] 1. `run.sh`: headless mode (`VM_HEADLESS=1` -> `-display none`, plain virtio-vga); still to do: make `vmtest.sh` and `vmbootloadertest.sh` headless by default (`--window` opts out, a log Konsole opens on a desktop, CI opens none) and copy the repo's run.sh into `$VM_DIR` before starting
-- [ ] 2. `vminstall.sh`: read the ISO's kernel/initramfs without `udisksctl` (bsdtar/7z when there is no session)
-- [ ] 3. `vminstall.sh` / `vmbootloadertest.sh`: no `/dev/tty` prompts and no `pgrep` on the whole host in CI (`CI=1`)
-- [ ] 4. Where the ISO comes from: the newest ISO release on git.upriser.nl (the Gitea mirror of
-      `theupriser/steamify-cachyos-live-iso` builds it and attaches it to the tag's release, see the
-      `steamify-iso-release` skill; GitHub's release links to it), or a `workflow_dispatch` input (release tag / URL)
-- [ ] 5. `.github/workflows/bootloader-test.yml`: matrix over `limine, systemd-boot, grub`; steps: install
-      qemu + ovmf, enable /dev/kvm, fetch the ISO, run the script, upload `~/vms/bl-<loader>.test.log` as an artifact
-- [ ] 6. Runner limits: disk (sparse 60 GB qcow2, free space check), RAM (8 GB VM on a 16 GB runner), timeout (60 min)
-- [ ] 7. Cache the pacman packages between runs (`actions/cache` on `~/vms/pkg-cache`, `VM_CACHE`)
-- [ ] 8. Trigger it once on the branch, fix what the runner shows; note the run time in the skill
-- [ ] 8b. Second job, `--fremont` hardware tests from TESTPLAN.md section H (LED driver, CEC with vivid,
-      BIOS dry-run, boot into desktop/gaming and reboot, power-off module): guest-side, so they run on a runner too;
-      needs a way to check without screenshots (gaming mode doesn't render)
-- [ ] 9. `vm-install` skill + `vmtest.sh` header: mention the workflow, and that the advertised-loader check fails CI when a loader has no test
-- [x] 10. TESTPLAN.md: section B for the boot loader test (B1-B8), pointing at `scripts/vmtest.sh`
+- [x] TESTPLAN.md: section B for the boot loader test (B1-B8), pointing at `scripts/vmtest.sh`
+- [x] `vmbootloadertest.sh --quick [--generic]`: only what the ISO's install must get right (B1-B5) on a Steam Machine VM
+      (`--fremont`) or a plain PC (`--generic`: the Steam Machine items and modules must be absent)
+- [ ] A helper that fetches the newest ISO release of the mirror (git.upriser.nl) into
+      `../steamify-cachyos-live-iso/out/desktop/`, for `vmtest.sh --install` (the ISO is no longer kept locally)
+- [ ] Document `--quick` / `--generic` in the `vm-install` skill and TESTPLAN.md (which B rows it covers)
+- [ ] Steamify `AGENTS.md`: "run `scripts/vmtest.sh` before the release PR into main" (decided 2026-09-30)
 
 ## Full automated test: everything in TESTPLAN.md that needs no person
 
