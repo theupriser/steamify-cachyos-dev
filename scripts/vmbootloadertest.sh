@@ -5,10 +5,11 @@
 # the old drm.edid_firmware parameter), a kernel update, and a reboot into
 # each of the two kernels. Guest checks: share/bootloader-test/*.sh.
 # All loaders in one go: scripts/vmtest.sh.
-#   scripts/vmbootloadertest.sh <limine|systemd-boot|grub> [--install] [--quick] [--window]
+#   scripts/vmbootloadertest.sh <limine|systemd-boot|grub> [--install] [--quick [--generic]] [--window]
 #   --install  first install the VM (scripts/vminstall.sh, from the Steamify ISO)
 #   --quick    only what the ISO's install must get right (B1-B5: boots through its own entry, OS name, loader,
 #              Steamify's state and modules as the install left them): no steamify.sh run, kernel update or reboots
+#   --generic  with --quick: a plain PC, not a Steam Machine (no --fremont): its Steam Machine items must stay off
 #   --window   show the VM's window (default: headless, with a Konsole on the log when there is a desktop)
 # Env: VM_DIR (default ~/vms/bl-<loader>), VM_ISO (default: the newest ISO in
 #      ../steamify-cachyos-live-iso/out/desktop), REPO (steamify-cachyos, 9p `repo`).
@@ -17,23 +18,28 @@ set -uo pipefail
 here="$(cd "$(dirname "$0")" && pwd)"
 repo="$(cd "$here/.." && pwd)"
 loader="${1:?usage: $0 <limine|systemd-boot|grub> [--install]}"
-install=false; window=false; quick=false
+install=false; window=false; quick=false; generic=false
 for a in "${@:2}"; do
-    case "$a" in --install) install=true ;; --quick) quick=true ;; --window) window=true ;; *) echo "Unknown argument: $a" >&2; exit 2 ;; esac
+    case "$a" in --install) install=true ;; --quick) quick=true ;; --generic) generic=true ;; --window) window=true ;; *) echo "Unknown argument: $a" >&2; exit 2 ;; esac
 done
 # No human is needed: headless (no VM window) unless --window. On a desktop a Konsole follows the log.
 $window || export VM_HEADLESS=1
 case "$loader" in limine|systemd-boot|grub) ;; *) echo "Unknown boot loader: $loader" >&2; exit 2 ;; esac
-export VM_DIR="${VM_DIR:-$HOME/vms/bl-$loader}"
+$generic && ! $quick && { echo "--generic needs --quick" >&2; exit 2; }
+hw=fremont; $generic && hw=generic
+suffix=""; $generic && suffix="-generic"
+export VM_DIR="${VM_DIR:-$HOME/vms/bl-$loader$suffix}"
+hwflags=(--fremont); $generic && hwflags=()
 # Own ssh port per loader, so the loaders can run side by side (vmtest.sh).
-case "$loader" in limine) export VM_PORT="${VM_PORT:-2401}" ;; systemd-boot) export VM_PORT="${VM_PORT:-2402}" ;; grub) export VM_PORT="${VM_PORT:-2403}" ;; esac
+off=0; $generic && off=10
+case "$loader" in limine) export VM_PORT="${VM_PORT:-$((2401 + off))}" ;; systemd-boot) export VM_PORT="${VM_PORT:-$((2402 + off))}" ;; grub) export VM_PORT="${VM_PORT:-$((2403 + off))}" ;; esac
 . "$here/common.sh"
 guest="$repo/share/bootloader-test"
 log="$VM_DIR.test.log"
 
 step() { printf '\n##### %s %s\n' "$(date +%T)" "$*"; }
 gssh() { vm_ssh -o ConnectTimeout=6 -o LogLevel=ERROR "$@"; }
-gscript() { gssh env "LOADER=$loader" bash -s < "$guest/$1"; }   # the guest's login shell is fish
+gscript() { gssh env "LOADER=$loader" "HARDWARE=$hw" bash -s < "$guest/$1"; }   # the guest's login shell is fish
 waitssh() { local _; for _ in $(seq 60); do gssh 'uptime -p' 2>/dev/null | grep -q '^up' && return 0; sleep 5; done; echo "FAIL no SSH"; return 1; }
 running() { pgrep -f "[h]ostfwd=tcp::$VM_PORT-" >/dev/null; }
 stop_vm() {
@@ -45,7 +51,7 @@ stop_vm() {
     pkill -f "[h]ostfwd=tcp::$VM_PORT-"; sleep 2
 }
 export VM_CACHE="${VM_CACHE-$HOME/vms/pkg-cache}"   # 9p tag `cache`: Steamify's downloads once for every VM
-start_vm() { stop_vm; cp "$repo/run.sh" "$VM_DIR/run.sh"; (cd "$VM_DIR" && VM_MEM="${VM_MEM:-4G}" REPO="${REPO:-$repo/../steamify-cachyos}" setsid nohup ./run.sh --fremont > vm.log 2>&1 &); }
+start_vm() { stop_vm; cp "$repo/run.sh" "$VM_DIR/run.sh"; (cd "$VM_DIR" && VM_MEM="${VM_MEM:-4G}" REPO="${REPO:-$repo/../steamify-cachyos}" setsid nohup ./run.sh "${hwflags[@]}" > vm.log 2>&1 &); }
 reboot_vm() { gssh 'sudo systemctl reboot' >/dev/null 2>&1; sleep 25; waitssh; }
 view_start   # one shared Konsole (common.sh)
 # The guest checks print PASS/FAIL lines; the summary at the end counts them in the log.
@@ -66,11 +72,11 @@ if $install; then
     fi
     # --quick checks what the ISO's install leaves on a Steam Machine: install on a VM that reports Fremont hardware
     # (a generic PC rightly gets no poweroff/CEC items and no DKMS modules).
-    fremont=(); $quick && fremont=(--fremont)
+    fremont=(); $quick && ! $generic && fremont=(--fremont)
     VM_BOOTLOADER="$loader" "$here/vminstall.sh" --iso "$iso" "${fremont[@]}" < /dev/null || exit 1
 fi
 
-step "start $loader as a Steam Machine"
+step "start $loader as a $($generic && echo plain PC || echo Steam Machine)"
 start_vm; waitssh || exit 1
 gssh 'sudo cat /sys/class/dmi/id/product_name' 2>/dev/null
 
