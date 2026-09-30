@@ -10,19 +10,19 @@ on git.upriser.nl, GitHub's link to it answers 200.
 
 ## The flow (one tag names everything)
 
-1. **GitHub, `iso-release.yml`** (ISO repo `theupriser/steamify-cachyos-live-iso`, `workflow_dispatch` only):
+1. **GitHub, `iso-1-github-tag.yml`** (ISO repo `theupriser/steamify-cachyos-live-iso`, `workflow_dispatch` only):
    takes Steamify's newest release (`X.Y.Z`), the time **now in UTC** and makes an **annotated tag**
    `vX.Y.Z-[dev.]YYYY.MM.DD-HHMM` plus a GitHub release with the changelog notes and the *direct* download link
    on Gitea. `dev.` and a pre-release on `feat/steamify` (test build), none on `master` (a release).
    GitHub is the only place that reads a clock.
 2. **The mirror syncs** (git.upriser.nl is a pull mirror of GitHub, every 10 minutes): the tag arrives.
-3. **Gitea, `steamify-iso.yml`** (`on: push: tags: ['v*']`, skipped on GitHub by `github.server_url`): parses the
+3. **Gitea, `iso-2-gitea-build.yml`** (`on: push: tags: ['v*']`, skipped on GitHub by `github.server_url`): parses the
    tag, builds the ISO on the runner with exactly that Steamify (`STEAMIFY_VERSION`), the tag's time (label) and
    the tag without its `v` (`STEAMIFY_ISO_VERSION`: file name, boot menu, `/etc/steammachine-iso-build`), then
    attaches ISO + `.sha256` + `.sha1` + `.pkgs.txt` to the mirror's release for that tag
    (`akkuman/gitea-release-action`, the run's own token). Never overwrites a release that already has its ISO.
-4. **Trigger:** by hand (*Actions -> Steamify ISO release (tag) -> Run workflow*, or
-   `gh workflow run iso-release.yml -R theupriser/steamify-cachyos-live-iso --ref feat/steamify`), or by a
+4. **Trigger:** by hand (*Actions -> ISO 1/2 · Tag and release (GitHub) -> Run workflow*, or
+   `gh workflow run iso-1-github-tag.yml -R theupriser/steamify-cachyos-live-iso --ref feat/steamify`), or by a
    new Steamify release: `steamify-cachyos`' `bundle.yml` step "Start the Steamify ISO's release" (secret
    `ISO_DISPATCH_TOKEN` there: fine-grained token, only the ISO repo, *Actions: read and write*; without it the
    step is skipped). A push does **not** release (a build is 20 minutes and 3.2 GB).
@@ -56,7 +56,7 @@ Total from a Steamify release to the ISO on Gitea: about 30 minutes (release, ta
 - Logs of a public repo's run are readable without login: `.../actions/runs/<run>/jobs/<job>/logs` (job numbers
   count up; re-runs get a new job number). Good for a monitor; no `gh` for Gitea.
 - Mirror sync is set to 10 min by the user with their own token; "Synchronize Now" or the API
-  (`POST /api/v1/repos/<repo>/mirror-sync`) for now. `GITEA_TOKEN` (secret in the ISO repo) would make GitHub
+  (`POST /api/v1/repos/<repo>/mirror-sync`) for now. `GIT_UPRISER_TOKEN` (secret in the ISO repo) would make GitHub
   trigger it; not needed.
 - **Build traps in the container:** `sudo mkarchiso` in `util-iso.sh` **drops environment variables**:
   it needs `sudo --preserve-env=STEAMIFY_ISO_VERSION,STEAMIFY_BUILD_STAMP` (the first Gitea ISO came out as
@@ -94,7 +94,7 @@ if it ever vanishes, ship the file with Steamify.
 ## Checklist for a release
 
 1. Steamify released? (`gh release list -R theupriser/steamify-cachyos`). The ISO gets the newest.
-2. `gh workflow run iso-release.yml ... --ref feat/steamify` (test) or `--ref master` (release; master must have
+2. `gh workflow run iso-1-github-tag.yml ... --ref feat/steamify` (test) or `--ref master` (release; master must have
    the workflows: it doesn't yet, `feat/steamify` is the ISO repo's working branch).
 3. Watch: tag on Gitea (`.../api/v1/repos/theupriser/steamify-cachyos-live-iso/tags`), the run's log (above),
    then `curl -I -L` the GitHub link. Old test releases: delete on GitHub (`gh release delete <tag>

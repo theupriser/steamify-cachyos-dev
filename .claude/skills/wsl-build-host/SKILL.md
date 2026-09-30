@@ -72,7 +72,7 @@ Wait in one background command, not a polling loop:
 Never start a build while `podman ps` shows one. Output:
 `/root/projects/steamify-cachyos-live-iso/out/desktop/steamify-cachyos-local-x86_64.iso` (a build by hand
 has no release tag, so it's named `local`, label `STEAMIFY_<version>_LOCAL`; releases are built on the Gitea
-mirror from a GitHub tag, see the ISO repo's `iso-release.yml`) (from
+mirror from a GitHub tag, see the ISO repo's `iso-1-github-tag.yml`) (from
 Windows Explorer: `\\wsl$\<distro>\root\projects\...`). The trailing
 `chown: missing operand` / "unknown error" is harmless. mksquashfs shows no
 progress in the log; the growing `build/iso/arch/x86_64/airootfs.sfs`
