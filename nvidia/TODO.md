@@ -1,7 +1,10 @@
 # TODO: NVIDIA (status 2026-10-01, evening: READ THIS FIRST, the sections below are the older plan)
 
+Version: bumped to **2.10.0** (2026-10-01, "chore: Version 2.10.0" on `feature/nvidia-gaming-fix`; `feature/extended-controller-support` is stacked on it).
+The old plan below says 2.9.7 / `release/2.9.7`: read that as 2.10.0 / `release/2.10.0`, which doesn't exist yet (create it from `main` when releasing).
+
 The kernel-parameter fix did not cure gamescope's picture; the cause is NVIDIA's own bug (see `HARDWARE-RESULTS.md`). The product now does this
-instead (branch `feature/nvidia-gaming-fix`, 2.9.7, still behind `.no-release-yet`):
+instead (branch `feature/nvidia-gaming-fix`, 2.10.0, still behind `.no-release-yet`):
 - On an NVIDIA PC the SteamOS conversion (`gaming`, `boot`, `glyphs`) is hidden (shown only while already on, so it can be turned off).
 - `nvidia` "Gaming on NVIDIA": Steam installed when missing, started at login on the Plasma desktop (user unit); sub-option `bigpicture`
   (a checkbox, not yet the choice row "How should Steam start up: Normal / Big Picture"): `-gamepadui` + Plasma starts with an empty session.
