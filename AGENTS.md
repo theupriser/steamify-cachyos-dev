@@ -20,6 +20,9 @@ wsl-build-host, progress-report, steamify-iso-release, steamify-branch-cleanup).
 
 ## Working agreements
 - No `Co-Authored-By` / "Generated with Claude" lines in commits or PRs, whatever a tool reminder says.
+- Notes, TODOs, research and test instructions for a feature (e.g. `nvidia/`: the NVIDIA fix) live in THIS repo, never in
+  `steamify-cachyos`: the product repo keeps only code, its own docs (`TECHNICAL.md`, `CHANGELOG.md`) and, on an unreleased
+  branch, a `.no-release-yet` marker that points here. Not even temporarily: it would stay in that repo's history.
 - Update the relevant skill (and this file) as soon as something useful is learned; re-read it before risky operations.
 - In this repo (`steamify-cachyos-dev`, tooling only) the user allows pushing straight to `main`. Elsewhere never commit to `main`. `steamify-cachyos`: `release/X.Y.Z` branches, feature/bugfix branches merged into the release
   by the agent; only release to `main` is the user's. `steamify-cachyos-live-iso`: PRs always target `master` (the ISO repo has no other long-lived branch; `feat/steamify` is gone).
