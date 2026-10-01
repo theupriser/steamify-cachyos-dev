@@ -46,7 +46,18 @@ CachyOS, Limine, kernel 7.2.8-1-cachyos, nvidia-open 615.71.09, gamescope 3.16.3
 - Open: a real session entry (`/usr/share/wayland-sessions/`, needs sudo) and the product decision: an NVIDIA session mode in Steamify
   instead of the gamescope DRM session. Not built, not in the product repo.
 
+## Smoothness: the TTY-only KWin session stutters, Plasma does not; Big Picture in Plasma is perfect (2026-10-01, evening)
+- TTY session (`kwin_wayland --drm` under `dbus-run-session`, no Plasma): the mouse and windows stutter every 1-2 s, with gamescope
+  (clunky) and without it (`steam -gamepadui` as KWin's only client). Same in both: not gamescope, not Steam. Plasma's own KWin is smooth.
+- Tried without effect: `KWIN_DRM_DISABLE_TRIPLE_BUFFERING=1`. Measured: the test KWin used about 2% CPU, no spikes, but its main thread
+  dropped to 0% about every 2 s (blocked, not busy); scheduling (RR main thread, nice -12) and capabilities equal to Plasma's KWin;
+  NVIDIA is boot_vga; no relevant environment differences found. Cause of the stutter not found.
+- Plain `steam -gamepadui` (Big Picture, no gamescope) in the normal Plasma session: **perfect** (smooth, no artifacts, no env var needed).
+- Direction: for NVIDIA PCs a Plasma session that shows only Steam's Big Picture (no desktop, no panel) instead of the gamescope
+  session. Gives up gamescope's features (HDR handling, FSR, overlay; most `-steamos3` menus need gamescope).
+
 ## State of the PC after the test (to undo)
 - The fix is applied (Limine file backup `/etc/default/limine.bak-gamescope-wizard`, early-load file, pacman hook): undo in INSTRUCTIONS.md.
+- Test launcher `~/.local/bin/steamify-nvidia-session-test`, log `~/steamify-nvidia-session-test.log`.
 - User override of the gaming session: `~/.config/systemd/user/gamescope-session.service.d/steamify-nvidia-test.conf` and
   `~/.local/share/steamify/nvidia-test/`.
