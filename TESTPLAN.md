@@ -64,7 +64,7 @@ change only shows right after Enter).
 
 ## F. Features per release
 
-### F2.9.7 Gaming on NVIDIA (`feature/nvidia-gaming-fix`; suite `nvidia`, fake NVIDIA PC)
+### F2.10.0 Gaming on NVIDIA (`feature/nvidia-gaming-fix`; suite `nvidia`, fake NVIDIA PC)
 
 gamescope's session is broken on NVIDIA (see `nvidia/HARDWARE-RESULTS.md`), so on an NVIDIA PC the conversion is replaced by
 "Gaming on NVIDIA" (Steam on the Plasma desktop, started at login, optionally in Big Picture) and single user mode logs in to Plasma.
@@ -80,7 +80,7 @@ fake NVIDIA modules for every kernel. What no VM can show (real driver, the pict
 | N5 | reboot | Plasma up through the test autologin, no NVIDIA parameters |
 | N6 | real RTX 5080 PC | **done by hand 2026-10-01** (earlier prototype): Big Picture on the Plasma desktop smooth and clean; the apply/boot of the final component is the user's next step |
 
-### F2.9.7 Extended controller support (`feature/extended-controller-support`; suite `cli`, block `60-c1-controllers.sh`)
+### F2.10.0 Extended controller support (`feature/extended-controller-support`; suite `cli`, block `60-c1-controllers.sh`)
 
 Opt-in item: `xpadneo-dkms`, `xone-dkms` and `xone-dongle-firmware` from the CachyOS repo, DKMS-built for every kernel. The VM has no
 dongle or controller: it covers the packages, the headers and the builds, not the hardware.
