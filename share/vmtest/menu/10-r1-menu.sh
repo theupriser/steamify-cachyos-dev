@@ -2,8 +2,13 @@
 menu() { printf "$1" | bash /mnt/steamify.sh 2>&1 | sed 's/\x1b\[[0-9;]*m//g'; }
 # R1.1: first-run ticks: everything but Boot into desktop and BIOS
 out=$(menu 'q\n')
-for n in 1 3 4 5 6 7 8 9 10; do grep -qE "^ +$n +[a-z-]+ +\[x\]" <<< "$out" && pass "R1.1 row $n ticked" || fail "R1.1 row $n not ticked"; done
-grep -qE "^ +11 .*\[ \]" <<< "$out" && pass "R1.1 Update BIOS not ticked" || fail "R1.1 Update BIOS ticked"
+# By name, not by row number (a new item shifts the numbers): the ticked ones, then the ones that are shown but never preselected.
+for item in "SteamOS conversion" "SteamOS theme" "Steam Deck/Machine icons" "Single user mode" "Steamify shortcut" "Update notifications" "HDMI-CEC" "Steam Machine support" "Power-off fix"; do
+    grep -qE "^ +[0-9]+ +[a-z-]+ +\[x\] .*$item" <<< "$out" && pass "R1.1 $item ticked" || fail "R1.1 $item not ticked"
+done
+for item in "Extended controller support" "Update BIOS"; do
+    grep -qE "^ +[0-9]+ +[a-z-]+ +\[ \] .*$item" <<< "$out" && pass "R1.1 $item shown, not ticked" || fail "R1.1 $item missing or ticked"
+done
 grep -q "Boot into: \[gamescope\]" <<< "$out" && pass "R1.1 boots into gamescope by default" || fail "R1.1 boot default is not gamescope"
 # R1.2: everything OK, back in the menu with all on
 info "applying Steamify (installs packages, builds kernel modules: a few minutes)..."

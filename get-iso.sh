@@ -4,7 +4,8 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-mirror="${MIRROR:-https://nl.mirror.cx/cachyos}"
+# CachyOS's own mirror: nl.mirror.cx gave about 1 MB/s here, this one 80 MB/s (MIRROR=... to use another).
+mirror="${MIRROR:-https://mirror.cachyos.org}"
 
 # The download page embeds the current ISO URL; take the release from it.
 release="$(curl -fsL https://cachyos.org/download/ |
@@ -22,8 +23,9 @@ if [[ -f cachyos.iso && "$(cat cachyos.iso.version 2>/dev/null)" != "$name" ]]; 
     rm -f cachyos.iso
 fi
 
-curl -fL -C - -o cachyos.iso "$url"
+# The version is written before the download: a partial file of this release is resumed, not deleted as "an older release".
 echo "$name" > cachyos.iso.version
+curl -fL -C - -o cachyos.iso "$url"
 
 echo "Verifying checksum..."
 curl -fsL "$url.sha256" | awk '{print $1"  cachyos.iso"}' | sha256sum -c

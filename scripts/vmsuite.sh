@@ -32,7 +32,7 @@ suite="${1:?usage: $0 <suite> [--window] | --prepare}"
 [[ "${2:-}" == --window ]] || export VM_HEADLESS=1
 dir="$repo/share/vmtest/$suite"
 [[ -d "$dir" ]] || { echo "No suite $suite (folders in share/vmtest/)" >&2; exit 2; }
-case "$suite" in cli) port=2301 ;; menu) port=2302 ;; hw) port=2303 ;; installer) port=2304 ;; toggles) port=2305 ;; *) port=2390 ;; esac
+case "$suite" in cli) port=2301 ;; menu) port=2302 ;; hw) port=2303 ;; installer) port=2304 ;; toggles) port=2305 ;; nvidia) port=2306 ;; *) port=2390 ;; esac
 export VM_PORT="${VM_PORT:-$port}"
 export VM_DIR="$HOME/vms/run-$suite"
 export REPO="${REPO:-$repo/../steamify-cachyos}"
