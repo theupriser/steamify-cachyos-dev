@@ -116,7 +116,7 @@ VM: note what differs here. In the VM (`vm_ssh`, visibly in a Konsole there):
 sudo pacman -S --needed --noconfirm podman git
 git clone https://github.com/theupriser/steamify-cachyos-live-iso ~/projects/steamify-cachyos-live-iso
 sudo mount -t 9p -o trans=virtio,version=9p2000.L repo /mnt     # the Steamify checkout (REPO)
-cd ~/projects/steamify-cachyos-live-iso && git checkout feat/steamify && ./steamify-prepare.sh /mnt
+cd ~/projects/steamify-cachyos-live-iso && git checkout master && ./steamify-prepare.sh /mnt
 ```
 
 then the same `podman run` as below (paths in the VM; `~/projects/iso-build.log`).
@@ -134,7 +134,7 @@ not a rootless podman GUI. Clone: `~/projects/steamify-cachyos-live-iso`.
 
 ```bash
 cd ~/projects/steamify-cachyos-live-iso
-git checkout feat/steamify && ./steamify-prepare.sh ~/projects/steamify-cachyos
+git checkout master && ./steamify-prepare.sh ~/projects/steamify-cachyos
 sudo rm -rf build out
 systemd-run --user --collect -q -u isobuild-$(date +%s) --working-directory=$PWD bash -c \
   "sudo podman run --rm -t --pids-limit=-1 --ulimit nofile=65536:65536 --privileged --network=host \
