@@ -1,3 +1,21 @@
+# TODO: NVIDIA (status 2026-10-01, evening: READ THIS FIRST, the sections below are the older plan)
+
+The kernel-parameter fix did not cure gamescope's picture; the cause is NVIDIA's own bug (see `HARDWARE-RESULTS.md`). The product now does this
+instead (branch `feature/nvidia-gaming-fix`, 2.9.7, still behind `.no-release-yet`):
+- On an NVIDIA PC the SteamOS conversion (`gaming`, `boot`, `glyphs`) is hidden (shown only while already on, so it can be turned off).
+- `nvidia` "Gaming on NVIDIA": Steam installed when missing, started at login on the Plasma desktop (user unit); sub-option `bigpicture`
+  (a checkbox, not yet the choice row "How should Steam start up: Normal / Big Picture"): `-gamepadui` + Plasma starts with an empty session.
+  RTX 20+ also keeps the old kernel parameters and early-load initramfs (user asked for it: "it may need it").
+- `single` (single user mode) also works there: its own SDDM autologin into the Plasma session (`zzz-steamify-autologin.conf`).
+- Tested in VMs (QEMU/KVM, fake NVIDIA GPU through `NVIDIA_DRM_DIR`, fake modules): suite `nvidia`, TESTPLAN N1-N5, 43 pass; regression suites green.
+- Tested by hand on the RTX 5080 (earlier prototypes): Big Picture in the normal Plasma session smooth and clean; autologin and the final component NOT yet run there.
+Open: run the final wizard on the RTX 5080 PC (turn the conversion off, tick Gaming on NVIDIA + Single user mode, reboot); the real choice row
+instead of the checkbox (the choice row is hard-wired to `boot` in the TUI, the app and `--boot`); games don't start fullscreen under Plasma
+(idea: a KWin rule forcing fullscreen for `steam_app_*`, may bring the direct-scanout artifacts back: test on the PC); apps that start later
+(CachyOS Hello) may still cover Big Picture; hint in the menu on why the item is missing while the conversion is on; changelog hashes;
+screenshot retake and the ISO's installer page for the new rows before a release. Separate branch `feature/extended-controller-support`
+(xone dongle + xpadneo, opt-in) is stacked on this one.
+
 # TODO: NVIDIA fix for gaming mode
 
 Product code: branch `feature/nvidia-gaming-fix` in steamify-cachyos (github.com/theupriser/steamify-cachyos). These notes live here, in

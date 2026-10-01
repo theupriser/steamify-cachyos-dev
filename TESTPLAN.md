@@ -64,6 +64,34 @@ change only shows right after Enter).
 
 ## F. Features per release
 
+### F2.9.7 Gaming on NVIDIA (`feature/nvidia-gaming-fix`; suite `nvidia`, fake NVIDIA PC)
+
+gamescope's session is broken on NVIDIA (see `nvidia/HARDWARE-RESULTS.md`), so on an NVIDIA PC the conversion is replaced by
+"Gaming on NVIDIA" (Steam on the Plasma desktop, started at login, optionally in Big Picture) and single user mode logs in to Plasma.
+The VM has no NVIDIA GPU: `fake_nvidia` (`share/vmtest/prelude.sh`) fakes one through Steamify's `NVIDIA_DRM_DIR` test hook and installs
+fake NVIDIA modules for every kernel. What no VM can show (real driver, the picture, Big Picture on a real GPU) is checked on the real PC.
+
+| # | Step | Expect |
+|---|---|---|
+| N1 | `--defaults --list` and `--backend status` with the fake GPU (`nvidia/10-n1-menu.sh`) | `nvidia`, `bigpicture` (parent `nvidia`), `single` offered and preselected; `gaming`, `boot`, `glyphs` hidden; without the fake GPU the conversion is offered and `nvidia` is not |
+| N2 | `--defaults --options nvidia,bigpicture,single` (`nvidia/20-n2-n5-lifecycle.host.sh`) | exit 0; Steam installed; unit with `-gamepadui` enabled; `loginMode=emptySession`; parameters in `/etc/default/limine` and `/boot/limine.conf`; early-load file, hook and script; modules in the initramfs; SDDM enabled and `zzz-steamify-autologin.conf` (Plasma session) |
+| N3 | reboot | Plasma straight in (no greeter), parameters on `/proc/cmdline`, the Steam unit started, `loginMode` kept |
+| N4 | `--defaults --options notify` | exit 0; Steam removed (Steamify installed it), unit and autologin file gone, `loginMode` back to not set, parameters/early-load/hook gone, plasma-login-manager the login manager again |
+| N5 | reboot | Plasma up through the test autologin, no NVIDIA parameters |
+| N6 | real RTX 5080 PC | **done by hand 2026-10-01** (earlier prototype): Big Picture on the Plasma desktop smooth and clean; the apply/boot of the final component is the user's next step |
+
+### F2.9.7 Extended controller support (`feature/extended-controller-support`; suite `cli`, block `60-c1-controllers.sh`)
+
+Opt-in item: `xpadneo-dkms`, `xone-dkms` and `xone-dongle-firmware` from the CachyOS repo, DKMS-built for every kernel. The VM has no
+dongle or controller: it covers the packages, the headers and the builds, not the hardware.
+
+| # | Step | Expect |
+|---|---|---|
+| C1 | `--defaults --options extended_controller_support` | exit 0; the three packages installed; `dkms status` shows xone and xpadneo installed for every kernel; the modules (`xone_dongle`, `hid_xpadneo`) exist for each |
+| C2 | the same again | quiet, nothing installed again |
+| C3 | `--defaults --options notify` | exit 0; the three packages removed again |
+| C4 | real PC with the Xbox dongle | **by hand, 2026-10-01 earlier**: the dongle works with the AUR `xone-dkms-git` (modules `xone_dongle`, `xone_gip_gamepad` loaded); status counts `xone-dkms-git` as on |
+
 ### F2.7.0 `--defaults --options` / `--boot`
 
 | # | Step | Expect |
@@ -143,3 +171,4 @@ and started with `--fremont`. Automated: `scripts/vmtest.sh` (see the vm-install
 | 2026-09-29 | ISO `feat/steamify` + PR #3 (`/var/log`), dev `main` with the B1 boot entry check | B1-B8 | Limine 43 / GRUB 42 pass (boot entry check passes: `Limine`, `cachyos`). systemd-boot (reinstalled): 36 pass, 8 fail, all CEC: the driver download got HTTP 429 from GitHub (rate limit); boot entry check passes (`Linux Boot Manager`); `/var/log/steamify-install.log` and `steamify-bootentry.log` readable after boot |
 | 2026-09-29 | Steamify `release/2.9.1` (CEC driver cache), ISO `feat/steamify` (PRs #2, #3), dev `main` | everything automated incl. hw block 50 (CEC cache) and the B1 boot entry check | **341 pass, 0 fail** in 19 minutes (toggles 42 +1 expected skip, hw 77, cli 55, menu 36, installer 4, Limine 43, systemd-boot 42, GRUB 42) |
 | 2026-09-30 | Steamify 2.9.6 (`steamify-cachyos` main `d93f9ea`), the official ISO `steamify-cachyos-2.9.6-260930-x86_64.iso` from git.upriser.nl (sha256 `4a94f308…aec41`), dev `main`; on the PC, headless (`CI=1`/`VM_HEADLESS=1`), `MAX_PARALLEL=5` | everything automated: B1-B8 (3 loaders, `--install` from the new ISO), cli, menu, hw, installer, toggles (base VM from the same ISO with `VM_STEAMIFY=skip`) | **341 pass, 0 fail** (toggles 42 +1 expected skip, hw 77, cli 55, menu 36, installer 4, Limine 43, systemd-boot 42, GRUB 42). Found on the way (test setup, not Steamify or the ISO): with five VMs at once the loaders' first boot took longer than `waitssh` waited (5 min), so all three stopped with `FAIL no SSH` although the VMs were up; `waitssh` now waits up to 15 minutes and the loaders were run again (install kept) |
+| 2026-10-01 | Steamify `feature/extended-controller-support` (7dae14c; on top of `feature/nvidia-gaming-fix` d0e4d8c, 2.9.7), plain CachyOS ISO 260809 (VM `~/vms/steamify-vm`, `vminstall.sh --iso`), dev `main` + the nvidia suite; on the PC (native CachyOS, KVM), headless | N1-N5 (new suite `nvidia`), C1-C3 (cli block 60), R1.1-R1.6/R1.10, H1-H5 and the CEC/CEC cache blocks, R2.1, toggles | **269 pass, 0 fail**: cli 65, nvidia 43, menu 37, hw 78, installer 4, toggles 42. Found on the way (test side, not Steamify): R1.1 and H3 pressed menu rows by number and the new Extended controller support row shifted them (now by name); the N4 check for the parameter in `/boot/limine.conf` must ignore snapper's snapshot entries, which keep the command line of their time. The kernel part (parameters, early-load file, hook, initramfs) behaves in a real Limine VM; the real driver and picture are only checked on the RTX 5080 PC |

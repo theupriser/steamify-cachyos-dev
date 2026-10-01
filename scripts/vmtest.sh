@@ -6,7 +6,7 @@
 #   boot          the boot loader test (limine, systemd-boot, grub), or name loaders
 #   generic       the plain-PC install check for every loader (vmbootloadertest.sh --quick --generic: a PC that is not a
 #                 Steam Machine must get no Steam Machine items and no DKMS modules); part of the default run
-#   <suite>       cli, menu, hw, installer, toggles (folders in share/vmtest/)
+#   <suite>       cli, menu, hw, installer, toggles, nvidia (folders in share/vmtest/)
 #   --install     install the boot loader VMs first from the newest Steamify ISO (asks before replacing a disk)
 #   --window      show the VMs' windows (default: headless; one shared Konsole follows ~/vms/test.log)
 #   MAX_PARALLEL=3 (env) VMs at once (5 worked on a 9800X3D / 64 GB); the slowest suites start first
@@ -42,7 +42,7 @@ if $screen; then
 fi
 if [[ ${#loaders[@]} -eq 0 && ${#suites[@]} -eq 0 ]] && ! $want_boot && ! $want_generic; then
     want_boot=true; want_generic=true
-    for d in cli menu hw installer toggles; do [[ -d "$repo/share/vmtest/$d" ]] && suites+=("$d"); done
+    for d in cli menu hw installer toggles nvidia; do [[ -d "$repo/share/vmtest/$d" ]] && suites+=("$d"); done
 fi
 # What the ISO advertises: the boot loaders calamares-online.sh keeps.
 advertised="$(sed -n 's/.*"bootloader:\([^"]*\)".*/\1/p' "$iso_repo/archiso/airootfs/usr/local/bin/calamares-online.sh" 2>/dev/null | head -n 1)"
