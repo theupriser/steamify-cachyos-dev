@@ -56,6 +56,13 @@ CachyOS, Limine, kernel 7.2.8-1-cachyos, nvidia-open 615.71.09, gamescope 3.16.3
 - Direction: for NVIDIA PCs a Plasma session that shows only Steam's Big Picture (no desktop, no panel) instead of the gamescope
   session. Gives up gamescope's features (HDR handling, FSR, overlay; most `-steamos3` menus need gamescope).
 
+## Plasma session with Big Picture started at login: works (2026-10-01, night)
+- `~/.config/autostart/steamify-bigpicture.desktop` (`Exec=steam -gamepadui`) in the normal Plasma Wayland session, SDDM autologin set to
+  `plasma.desktop` (`pkexec /usr/lib/steamos/steam-set-session plasma.desktop`): Big Picture opens by itself, smooth, no artifacts, no
+  KWin environment variables needed. Exiting Steam leaves the Plasma desktop, no relogin.
+- A separate session entry (prototype in the scratchpad, not installed: `steamify-bigpicture-session` marker + autostart helper, session
+  file in `/usr/share/wayland-sessions`) only decides WHEN Big Picture starts; the plain autostart gave the same result.
+
 ## State of the PC after the test (to undo)
 - The fix is applied (Limine file backup `/etc/default/limine.bak-gamescope-wizard`, early-load file, pacman hook): undo in INSTRUCTIONS.md.
 - Test launcher `~/.local/bin/steamify-nvidia-session-test`, log `~/steamify-nvidia-session-test.log`.
