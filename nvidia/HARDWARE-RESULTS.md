@@ -32,6 +32,20 @@ CachyOS, Limine, kernel 7.2.8-1-cachyos, nvidia-open 615.71.09, gamescope 3.16.3
 - So on NVIDIA the separate gamescope session (the SteamOS conversion) is blocked by the driver bug; a nested borderless gamescope works.
   Whether Steamify gets a nested option for NVIDIA is the user's decision.
 
+## Cause confirmed: KWin's direct scanout; a session without Plasma works (2026-10-01, later)
+- A TTY session of only `kwin_wayland --drm` + `gamescope -b` + `steam -gamepadui` (no Plasma shell, no panel) artifacted too
+  (KWin hands the covering window straight to the display).
+- Same session with `KWIN_DRM_NO_DIRECT_SCANOUT=1` (exists in KWin 6.7.5's libkwin; not in the kwin_wayland binary's strings):
+  NO artifacts, full screen, about 175 Hz (gamescope logs `Changed refresh to: 174.962hz`). Animations felt a bit clunky (cause unknown:
+  an extra composition step without scanout, no CAP_SYS_NICE for gamescope, no VRR, nested frame pacing; other switches to try:
+  `KWIN_DRM_DISABLE_TRIPLE_BUFFERING`, `KWIN_DRM_PREFER_COLOR_DEPTH`).
+- Launcher used for the test: `~/.local/bin/steamify-nvidia-session-test` (run from a free TTY; KWin as the compositor,
+  `gamescope -W 3440 -H 1440 -r 175 -b -e --hdr-enabled -- steam -gamepadui`, a watchdog ends it after 90 s).
+  Lesson: the first version's timeout left KWin/gamescope/Steam running (the cleanup came after a pipeline that waits for them);
+  `pkill -f '<pattern>'` in a command that contains the pattern kills the caller.
+- Open: a real session entry (`/usr/share/wayland-sessions/`, needs sudo) and the product decision: an NVIDIA session mode in Steamify
+  instead of the gamescope DRM session. Not built, not in the product repo.
+
 ## State of the PC after the test (to undo)
 - The fix is applied (Limine file backup `/etc/default/limine.bak-gamescope-wizard`, early-load file, pacman hook): undo in INSTRUCTIONS.md.
 - User override of the gaming session: `~/.config/systemd/user/gamescope-session.service.d/steamify-nvidia-test.conf` and
