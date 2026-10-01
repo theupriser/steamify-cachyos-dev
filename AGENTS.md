@@ -22,7 +22,7 @@ wsl-build-host, progress-report, steamify-iso-release, steamify-branch-cleanup).
 - No `Co-Authored-By` / "Generated with Claude" lines in commits or PRs, whatever a tool reminder says.
 - Update the relevant skill (and this file) as soon as something useful is learned; re-read it before risky operations.
 - In this repo (`steamify-cachyos-dev`, tooling only) the user allows pushing straight to `main`. Elsewhere never commit to `main`. `steamify-cachyos`: `release/X.Y.Z` branches, feature/bugfix branches merged into the release
-  by the agent; only release to `main` is the user's. `steamify-cachyos-live-iso`: PRs always target `feat/steamify`.
+  by the agent; only release to `main` is the user's. `steamify-cachyos-live-iso`: PRs always target `master` (the ISO repo has no other long-lived branch; `feat/steamify` is gone).
   Branch cleanup: the `steamify-branch-cleanup` skill in `.claude/skills/`.
 - Follow and update `TESTPLAN.md`; every check in `share/vmtest/` says which row it covers.
 - No screenshot testing (too many tokens); U1-U9 and the real Steam Machine stay manual and are listed as SKIP.
@@ -51,7 +51,7 @@ The tests run on the user's PC (Ryzen 9800X3D, 64 GB, **WSL2**), started from a 
 down, syncing from the laptop, the podman ISO build, VM windows through WSLg, output in the user's WSL terminal, no GPU
 passthrough): `.claude/skills/wsl-build-host/SKILL.md`. `vminstall.sh` works there without udisks (losetup as root).
 
-## Problems found in the Steamify ISO (fix in `steamify-cachyos-live-iso`, PRs into `feat/steamify`)
+## Problems found in the Steamify ISO (fix in `steamify-cachyos-live-iso`, PRs into `master`)
 - Fixed (PR #2): cachyos-installer's `bootctl install` runs in a chroot and writes no EFI boot entry, so systemd-boot
   only booted through the disk's fallback path (in OVMF after 4-5 minutes of network boot, every boot).
   `steamify-install` now registers it with efibootmgr from the live system.

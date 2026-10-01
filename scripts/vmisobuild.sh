@@ -10,14 +10,14 @@
 # The VM must run with its cache shared (one per VM, next to its disk), and
 # gets all host cores but 2 for the build: start it with
 #   VM_CACHE=$VM_DIR/iso-cache VM_CPUS=$(( $(nproc) * 3 / 4 )) scripts/vmreset.sh --fremont
-# Env: VM_DIR (see common.sh), ISO_BRANCH (feat/steamify), ISO_OUT (the host's
+# Env: VM_DIR (see common.sh), ISO_BRANCH (master), ISO_OUT (the host's
 #      steamify-cachyos-live-iso/out/desktop).
 set -euo pipefail
 here="$(cd "$(dirname "$0")" && pwd)"
 . "$here/common.sh"
 steamify=""
 [[ "${1:-}" == --steamify ]] && steamify="${2:?--steamify needs a guest path}"
-branch="${ISO_BRANCH:-feat/steamify}"
+branch="${ISO_BRANCH:-master}"
 # Where the ISO lands: out/desktop of the host's live-ISO checkout (next to
 # this repo), where a local build would put it.
 out="${ISO_OUT:-$(dirname "$(cd "$here/.." && pwd)")/steamify-cachyos-live-iso/out/desktop}"
