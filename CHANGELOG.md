@@ -4,6 +4,26 @@ All notable changes, per version and per commit. Versions follow
 [Semantic Versioning](https://semver.org/) and were numbered from the start
 of the history.
 
+## 0.5.0 - 2026-10-02
+
+The whole automated test (boot loaders plus suites), the Steamify ISO pipeline,
+the NVIDIA notes, and the Steamify unit tests and hardware test moved here.
+
+- **feat: `scripts/vmtest.sh` runs everything: the boot loader test for every loader the ISO advertises, the plain-PC install check and the `cli`, `menu`, `hw`, `installer`, `toggles` and `nvidia` suites** (`ee20bd9`, `c91277a`, `fe5251f`, `b91ef91`, `6d264ac`, `343ff1e`, `5d168ea`)
+  - `vmbootloadertest.sh --quick [--generic]`: only what the ISO's install must get right, a Steam Machine gets all its items and modules, a plain PC none (`fafa38f`, `459832c`)
+  - faster and parallel runs (`MAX_PARALLEL`), a remote runner, progress lines while the tests run (`0c84b8b`, `540139b`)
+  - the boot entry check (BootCurrent) after every reboot (`27b7445`), the CEC driver cache blocks (`e6119ca`), `vmview.py` (`4cc4046`)
+- **feat: `scripts/vminstall.sh` installs any boot loader and runs the Steamify ISO's Steamify step, with a package cache** (`8646b3c`)
+  - parallel installs under a lock, never root as the guest user, headless in CI, stops at once when the live system reports a failed install (`9d53740`, `d5cfadf`, `e929444`, `a34efb0`)
+- **feat: `scripts/vmisobuild.sh` builds the Steamify ISO in the test VM** (`bc06bc2`)
+- **feat: the `progress-report` skill and `scripts/vmprogress.sh`** (`fd9ecf4`)
+- **docs: skills and AGENTS.md: the ISO release pipeline, the WSL build host, the VM tests, token-cheap ISO-VM testing** (`0d0279b`, `a1f8089`, `cb247b9`, `0052f1b`)
+- **docs: `nvidia/`: TODO, research and test instructions for the NVIDIA fix, with the results of the hardware test on the RTX 5080 PC** (`d045b82`, `0052566`, `fa67d65`)
+- **test: the Steamify unit tests (`controllers-test.sh`, `nvidia-test.sh`) and the NVIDIA hardware test move here from steamify-cachyos, in `tests/`; `REPO` points at the checkout** (`899e9af`)
+- **test: `vmstate.sh` reports Steam's autostart entry (silent, plain, none) instead of the old systemd unit** (`66ec27d`)
+- Steamify 2.11.0 tested here before its release: three ISO installs (defaults, everything on, Fremont everything on) and the full suite on a plain CachyOS VM, 269 checks passed, 0 failed, 1 known skip. Found on the way: the first-login skip failed in a bundle (`SCRIPT_DIR` unbound) and the Steam Machine serial step failed in the installer's chroot (read-only `/sys`); both fixed in Steamify.
+- Known: `vmtest.sh` and `vmsuite.sh` write fixed files in `/tmp` (`/tmp/vmtest-*.out`, `/tmp/vmsuite-*-reset.out`, `/tmp/vminstall-iso.lock`): a second user on the same host gets "Permission denied" on files the first one left.
+
 ## 0.4.0 - 2026-09-28
 
 An unattended VM install, a test plan, and the lessons from testing
