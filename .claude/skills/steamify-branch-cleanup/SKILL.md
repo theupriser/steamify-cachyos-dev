@@ -6,7 +6,7 @@ description: Clean up git branches in steamify-cachyos (and sibling steamify rep
 # Steamify branch cleanup
 
 Rules:
-- ALWAYS keep `main` and every `release/X.Y.Z` branch (local and remote). Never delete them.
+- ALWAYS keep `main`. A `release/X.Y.Z` branch is deleted (local and remote) once its release is published and its tip is contained in a tag or in `main` (the user said so on 2026-10-02: the tags keep the history). Check each one first (`git tag --contains <tip>`, `git merge-base --is-ancestor`): a release branch with a commit that is in no tag and not in `main` (`release/2.9.2`: a docs commit) is kept and reported. The open release's branch stays until its PR is merged.
 - Delete `feature/*` and `bugfix/*` branches (local and remote) only when merged into `origin/main` or the current `origin/release/*` branch.
 - Delete local branches whose remote is gone (`[origin/...: gone]`) only if they are `feature/*` or `bugfix/*`; local stale `release/*` branches are kept unless the user says otherwise.
 - Never touch unmerged branches; list them and report instead.
@@ -14,8 +14,7 @@ Rules:
 
 Merging a feature/bugfix PR yourself (into a release branch, or `master` in the ISO repo): delete the
 branch at once, remote and local (`gh pr merge N --merge --delete-branch`, then `git branch -D`, `git fetch
---prune`); the user asked for this on 2026-09-29. Release branches are never deleted (kept as history next to
-their tags). Unmerged old branches (`feat/vram-booster`, `refactor/qml-screens`, `backup/*`) are reported, not
+--prune`); the user asked for this on 2026-09-29. Release branches are deleted after their release (see the rules above; the tag keeps the history). Unmerged old branches (`feat/vram-booster`, `refactor/qml-screens`, `backup/*`) are reported, not
 touched. The GitHub-side `release delete <tag> --cleanup-tag` is how test ISO releases go.
 
 Steps:
