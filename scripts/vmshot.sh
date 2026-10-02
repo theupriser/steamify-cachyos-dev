@@ -16,7 +16,7 @@ export XDG_RUNTIME_DIR=/run/user/$uid DBUS_SESSION_BUS_ADDRESS=unix:path=/run/us
 rm -f /tmp/vmshot.png
 if [ -n "$clean" ]; then
     # Steam as a whole: closing only its web helper leaves a black window.
-    # It comes back at the next login (steam-desktop-autostart).
+    # It comes back at the next login (Steam autostart entry).
     steam -shutdown >/dev/null 2>&1 & sleep 5; pkill -u "$USER" -x steam; pkill -u "$USER" -x steamwebhelper
     pkill -u "$USER" cachyos-hello; pkill -u "$USER" -x konsole
     sleep 2
