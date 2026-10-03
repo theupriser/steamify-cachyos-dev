@@ -1,0 +1,170 @@
+== pc first run
+  wanted: gaming glyphs theme single launcher notify
+  disable: 
+  enable:  gaming glyphs theme single launcher notify
+== pc first run, untick gaming
+  wanted: theme launcher notify
+  disable: 
+  enable:  theme launcher notify
+== pc single on
+  wanted: gaming theme single launcher notify
+  disable: 
+  enable:  gaming theme single launcher notify
+== pc single then gaming off
+  wanted: theme launcher notify
+  disable: 
+  enable:  theme launcher notify
+== pc boot desktop
+  wanted: gaming boot glyphs theme single launcher notify
+  disable: 
+  enable:  gaming boot glyphs theme single launcher notify
+== pc boot desktop then gaming off
+  wanted: theme launcher notify
+  disable: 
+  enable:  theme launcher notify
+== pc silent only
+  wanted: gaming silent glyphs theme single launcher notify
+  disable: 
+  enable:  gaming silent glyphs theme single launcher notify
+== pc all on, theme off
+  wanted: gaming boot silent glyphs single launcher notify
+  disable: theme
+  enable:  gaming silent notify
+== pc launcher off
+  wanted:
+  disable: launcher
+  enable:  
+== pc steamgame on without launcher
+  wanted: theme launcher steamgame notify
+  disable: 
+  enable:  theme launcher steamgame notify
+== machine first run
+  wanted: gaming glyphs theme single launcher steamgame notify vram cec machine poweroff
+  disable: 
+  enable:  gaming glyphs theme single launcher steamgame notify vram cec machine poweroff
+== machine silent hidden until boot desktop
+  wanted: gaming silent glyphs theme single launcher notify vram machine
+  disable: 
+  enable:  gaming silent glyphs theme single launcher notify vram machine
+== machine boot desktop keeps silent
+  wanted: gaming boot silent glyphs theme single launcher notify vram machine
+  disable: 
+  enable:  gaming boot silent glyphs theme single launcher notify vram machine
+== machine off
+  wanted: gaming glyphs theme single launcher notify vram
+  disable: poweroff machine
+  enable:  gaming glyphs theme single launcher notify vram
+== machine poweroff off
+  wanted: gaming glyphs theme single launcher notify vram machine
+  disable: poweroff
+  enable:  gaming glyphs theme single launcher notify vram machine
+== machine poweroff on brings machine
+  wanted: gaming glyphs theme single launcher notify vram machine poweroff
+  disable: 
+  enable:  gaming glyphs theme single launcher notify vram machine poweroff
+== machine kpin removal
+  wanted: gaming glyphs theme single launcher notify vram machine poweroff
+  disable: kpin
+  enable:  gaming glyphs theme single launcher notify vram machine poweroff
+== nvidia first run
+  wanted: nvidia bigpicture theme single launcher notify
+  disable: 
+  enable:  nvidia bigpicture theme single launcher notify
+== nvidia bigpicture off
+  wanted: nvidia theme single launcher notify
+  disable: bigpicture
+  enable:  nvidia theme single launcher notify
+== nvidia nvsilent on
+  wanted: nvidia nvsilent theme single launcher notify
+  disable: bigpicture
+  enable:  nvidia nvsilent theme single launcher notify
+== nvidia nvsilent then bigpicture
+  wanted: nvidia bigpicture theme single launcher notify
+  disable: 
+  enable:  nvidia bigpicture theme single launcher notify
+== nvidia off
+  wanted: theme single launcher notify
+  disable: nvsilent bigpicture nvidia
+  enable:  theme single launcher notify
+== nvidia single
+  wanted: nvidia bigpicture theme launcher notify
+  disable: 
+  enable:  nvidia bigpicture theme launcher notify
+== nvidia gaming already on
+  wanted: nvidia theme launcher notify
+  disable: gaming
+  enable:  nvidia theme launcher notify
+== outdated features
+  wanted: gaming glyphs theme single launcher notify
+  disable: 
+  enable:  gaming glyphs single launcher notify
+== reapply (a)
+  wanted: gaming glyphs theme single launcher notify
+  disable: 
+  enable:  gaming glyphs theme single launcher notify
+== backend_apply single
+{"event":"plan","disable":[],"enable":["gaming","single"]}
+== backend_apply boot
+{"event":"plan","disable":[],"enable":[]}
+== backend_apply poweroff
+{"event":"plan","disable":[],"enable":["machine","poweroff"]}
+== backend_apply silent
+{"event":"plan","disable":[],"enable":["gaming","silent"]}
+== backend_apply kpin
+{"event":"plan","disable":[],"enable":[]}
+== backend_apply gaming boot
+{"event":"plan","disable":[],"enable":["gaming","boot"]}
+== backend_apply launcher steamgame
+{"event":"plan","disable":[],"enable":["launcher","steamgame"]}
+== backend_apply nvidia bigpicture
+{"event":"plan","disable":[],"enable":["nvidia","bigpicture"]}
+== backend_apply nvidia nvsilent
+{"event":"plan","disable":[],"enable":["nvidia","nvsilent"]}
+== backend_apply nvidia bigpicture nvsilent
+{"event":"plan","disable":[],"enable":["nvidia","bigpicture"]}
+== backend_apply nvidia single
+{"event":"plan","disable":[],"enable":["single"]}
+== backend_apply nvidia boot
+{"event":"plan","disable":[],"enable":[]}
+== defaults_list []
+{"hideWhen":"","hint":"boot into gaming mode, Steam on the desktop","id":"gaming","kind":"toggle","label":"SteamOS conversion","needs":"","on":true,"parent":"","selectable":true}
+{"hideWhen":"","hint":"","id":"boot","kind":"choice","label":"Boot into the desktop instead of gaming mode","needs":"","on":false,"parent":"gaming","selectable":true}
+{"hideWhen":"","hint":"in the tray at login on the desktop, no window","id":"silent","kind":"toggle","label":"Start Steam silently in desktop mode","needs":"","on":false,"parent":"gaming","selectable":true}
+{"hideWhen":"","hint":"Deck button icons in gaming mode","id":"glyphs","kind":"toggle","label":"Install Steam Deck/Machine icons","needs":"","on":true,"parent":"gaming","selectable":true}
+{"hideWhen":"","hint":"Vapor look (cachyos-vapor)","id":"theme","kind":"toggle","label":"Install SteamOS theme","needs":"","on":true,"parent":"","selectable":true}
+{"hideWhen":"","hint":"no password, lock screen or log out (SDDM)","id":"single","kind":"toggle","label":"Single user mode","needs":"","on":true,"parent":"","selectable":true}
+{"hideWhen":"","hint":"the app on the desktop, Steamify Terminal in the launcher","id":"launcher","kind":"toggle","label":"Steamify shortcut","needs":"","on":true,"parent":"","selectable":true}
+{"hideWhen":"","hint":"a notification when there's a new Steamify, never updates by itself","id":"notify","kind":"toggle","label":"Update notifications","needs":"","on":true,"parent":"","selectable":true}
+{"hideWhen":"","hint":"Xbox wireless dongle (xone), Xbox controllers over Bluetooth (xpadneo)","id":"extended_controller_support","kind":"toggle","label":"Extended controller support","needs":"","on":false,"parent":"","selectable":true}
+{"hideWhen":"","hint":"use Steam with the TV remote, TV on/off with the PC (experimental)","id":"cec","kind":"toggle","label":"HDMI-CEC","needs":"","on":false,"parent":"","selectable":true}
+== backend_status []
+{"bios":null,"firstRun":true,"items":[{"hint":"boot into gaming mode, Steam on the desktop","id":"gaming","kind":"toggle","label":"SteamOS conversion","needs":"","new":false,"on":false,"parent":"","selectable":true,"update":false,"wanted":true},{"hint":"","id":"boot","kind":"choice","label":"Boot into the desktop instead of gaming mode","needs":"","new":false,"on":false,"parent":"gaming","selectable":true,"update":false,"wanted":false},{"hint":"in the tray at login on the desktop, no window","id":"silent","kind":"toggle","label":"Start Steam silently in desktop mode","needs":"","new":false,"on":false,"parent":"gaming","selectable":true,"update":false,"wanted":false},{"hint":"Deck button icons in gaming mode","id":"glyphs","kind":"toggle","label":"Install Steam Deck/Machine icons","needs":"","new":false,"on":false,"parent":"gaming","selectable":true,"update":false,"wanted":true},{"hint":"Vapor look (cachyos-vapor)","id":"theme","kind":"toggle","label":"Install SteamOS theme","needs":"","new":false,"on":false,"parent":"","selectable":true,"update":false,"wanted":true},{"hint":"no password, lock screen or log out (SDDM)","id":"single","kind":"toggle","label":"Single user mode","needs":"","new":false,"on":false,"parent":"","selectable":true,"update":false,"wanted":true},{"hint":"the app on the desktop, Steamify Terminal in the launcher","id":"launcher","kind":"toggle","label":"Steamify shortcut","needs":"","new":false,"on":false,"parent":"","selectable":true,"update":false,"wanted":true},{"hint":"a notification when there's a new Steamify, never updates by itself","id":"notify","kind":"toggle","label":"Update notifications","needs":"","new":false,"on":false,"parent":"","selectable":true,"update":false,"wanted":true},{"hint":"Xbox wireless dongle (xone), Xbox controllers over Bluetooth (xpadneo)","id":"extended_controller_support","kind":"toggle","label":"Extended controller support","needs":"","new":false,"on":false,"parent":"","selectable":true,"update":false,"wanted":false},{"hint":"use Steam with the TV remote, TV on/off with the PC (experimental)","id":"cec","kind":"toggle","label":"HDMI-CEC","needs":"","new":false,"on":false,"parent":"","selectable":true,"update":false,"wanted":false}],"pinnedKernel":"7.1.6-1","steamMachine":false,"version":"0.0.0"}
+== defaults_list [fremont steam vram]
+{"hideWhen":"","hint":"boot into gaming mode, Steam on the desktop","id":"gaming","kind":"toggle","label":"SteamOS conversion","needs":"","on":true,"parent":"","selectable":true}
+{"hideWhen":"","hint":"","id":"boot","kind":"choice","label":"Boot into the desktop instead of gaming mode","needs":"","on":false,"parent":"gaming","selectable":true}
+{"hideWhen":"","hint":"in the tray at login on the desktop, no window","id":"silent","kind":"toggle","label":"Start Steam silently in desktop mode","needs":"","on":false,"parent":"gaming","selectable":true}
+{"hideWhen":"","hint":"Deck button icons in gaming mode","id":"glyphs","kind":"toggle","label":"Install Steam Deck/Machine icons","needs":"","on":true,"parent":"gaming","selectable":true}
+{"hideWhen":"","hint":"Vapor look (cachyos-vapor)","id":"theme","kind":"toggle","label":"Install SteamOS theme","needs":"","on":true,"parent":"","selectable":true}
+{"hideWhen":"","hint":"no password, lock screen or log out (SDDM)","id":"single","kind":"toggle","label":"Single user mode","needs":"","on":true,"parent":"","selectable":true}
+{"hideWhen":"","hint":"the app on the desktop, Steamify Terminal in the launcher","id":"launcher","kind":"toggle","label":"Steamify shortcut","needs":"","on":true,"parent":"","selectable":true}
+{"hideWhen":"","hint":"Steamify in your Steam library, for the controller and gaming mode","id":"steamgame","kind":"toggle","label":"Add as non-Steam game","needs":"","on":true,"parent":"launcher","selectable":true}
+{"hideWhen":"","hint":"a notification when there's a new Steamify, never updates by itself","id":"notify","kind":"toggle","label":"Update notifications","needs":"","on":true,"parent":"","selectable":true}
+{"hideWhen":"","hint":"Xbox wireless dongle (xone), Xbox controllers over Bluetooth (xpadneo)","id":"extended_controller_support","kind":"toggle","label":"Extended controller support","needs":"","on":false,"parent":"","selectable":true}
+{"hideWhen":"","hint":"the game in front keeps its VRAM, background apps make room","id":"vram","kind":"toggle","label":"VRAM booster","needs":"","on":true,"parent":"","selectable":true}
+{"hideWhen":"","hint":"use Steam with the TV remote, TV on/off with the PC (experimental)","id":"cec","kind":"toggle","label":"HDMI-CEC","needs":"","on":true,"parent":"","selectable":true}
+{"hideWhen":"","hint":"LED bar driver, hardware settings in Steam","id":"machine","kind":"toggle","label":"Steam Machine support","needs":"","on":true,"parent":"","selectable":true}
+{"hideWhen":"","hint":"the Steam Machine stays off after shutting down","id":"poweroff","kind":"toggle","label":"Power-off fix","needs":"","on":true,"parent":"machine","selectable":true}
+== backend_status [fremont steam vram]
+{"bios":null,"firstRun":true,"items":[{"hint":"boot into gaming mode, Steam on the desktop","id":"gaming","kind":"toggle","label":"SteamOS conversion","needs":"","new":false,"on":false,"parent":"","selectable":true,"update":false,"wanted":true},{"hint":"","id":"boot","kind":"choice","label":"Boot into the desktop instead of gaming mode","needs":"","new":false,"on":false,"parent":"gaming","selectable":true,"update":false,"wanted":false},{"hint":"in the tray at login on the desktop, no window","id":"silent","kind":"toggle","label":"Start Steam silently in desktop mode","needs":"","new":false,"on":false,"parent":"gaming","selectable":true,"update":false,"wanted":false},{"hint":"Deck button icons in gaming mode","id":"glyphs","kind":"toggle","label":"Install Steam Deck/Machine icons","needs":"","new":false,"on":false,"parent":"gaming","selectable":true,"update":false,"wanted":true},{"hint":"Vapor look (cachyos-vapor)","id":"theme","kind":"toggle","label":"Install SteamOS theme","needs":"","new":false,"on":false,"parent":"","selectable":true,"update":false,"wanted":true},{"hint":"no password, lock screen or log out (SDDM)","id":"single","kind":"toggle","label":"Single user mode","needs":"","new":false,"on":false,"parent":"","selectable":true,"update":false,"wanted":true},{"hint":"the app on the desktop, Steamify Terminal in the launcher","id":"launcher","kind":"toggle","label":"Steamify shortcut","needs":"","new":false,"on":false,"parent":"","selectable":true,"update":false,"wanted":true},{"hint":"Steamify in your Steam library, for the controller and gaming mode","id":"steamgame","kind":"toggle","label":"Add as non-Steam game","needs":"","new":false,"on":false,"parent":"launcher","selectable":true,"update":false,"wanted":true},{"hint":"a notification when there's a new Steamify, never updates by itself","id":"notify","kind":"toggle","label":"Update notifications","needs":"","new":false,"on":false,"parent":"","selectable":true,"update":false,"wanted":true},{"hint":"Xbox wireless dongle (xone), Xbox controllers over Bluetooth (xpadneo)","id":"extended_controller_support","kind":"toggle","label":"Extended controller support","needs":"","new":false,"on":false,"parent":"","selectable":true,"update":false,"wanted":false},{"hint":"the game in front keeps its VRAM, background apps make room","id":"vram","kind":"toggle","label":"VRAM booster","needs":"","new":false,"on":false,"parent":"","selectable":true,"update":false,"wanted":true},{"hint":"use Steam with the TV remote, TV on/off with the PC (experimental)","id":"cec","kind":"toggle","label":"HDMI-CEC","needs":"","new":false,"on":false,"parent":"","selectable":true,"update":false,"wanted":true},{"hint":"LED bar driver, hardware settings in Steam","id":"machine","kind":"toggle","label":"Steam Machine support","needs":"","new":false,"on":false,"parent":"","selectable":true,"update":false,"wanted":true},{"hint":"the Steam Machine stays off after shutting down","id":"poweroff","kind":"toggle","label":"Power-off fix","needs":"","new":false,"on":false,"parent":"machine","selectable":true,"update":false,"wanted":true}],"pinnedKernel":"7.1.6-1","steamMachine":true,"version":"0.0.0"}
+== defaults_list [nvidia steam]
+{"hideWhen":"","hint":"Steam on the desktop, started at login","id":"nvidia","kind":"toggle","label":"Gaming on NVIDIA","needs":"","on":true,"parent":"","selectable":true}
+{"hideWhen":"","hint":"the controller-friendly Steam (untick: Steam's normal window)","id":"bigpicture","kind":"toggle","label":"Steam starts in Big Picture","needs":"","on":true,"parent":"nvidia","selectable":true}
+{"hideWhen":"bigpicture","hint":"in the tray at login, no window (untick: Steam's normal window)","id":"nvsilent","kind":"toggle","label":"Start Steam silently","needs":"","on":false,"parent":"nvidia","selectable":true}
+{"hideWhen":"","hint":"Vapor look (cachyos-vapor)","id":"theme","kind":"toggle","label":"Install SteamOS theme","needs":"","on":true,"parent":"","selectable":true}
+{"hideWhen":"","hint":"no password, lock screen or log out (SDDM)","id":"single","kind":"toggle","label":"Single user mode","needs":"","on":true,"parent":"","selectable":true}
+{"hideWhen":"","hint":"the app on the desktop, Steamify Terminal in the launcher","id":"launcher","kind":"toggle","label":"Steamify shortcut","needs":"","on":true,"parent":"","selectable":true}
+{"hideWhen":"","hint":"a notification when there's a new Steamify, never updates by itself","id":"notify","kind":"toggle","label":"Update notifications","needs":"","on":true,"parent":"","selectable":true}
+{"hideWhen":"","hint":"Xbox wireless dongle (xone), Xbox controllers over Bluetooth (xpadneo)","id":"extended_controller_support","kind":"toggle","label":"Extended controller support","needs":"","on":false,"parent":"","selectable":true}
+{"hideWhen":"","hint":"use Steam with the TV remote, TV on/off with the PC (experimental)","id":"cec","kind":"toggle","label":"HDMI-CEC","needs":"","on":false,"parent":"","selectable":true}
+== backend_status [nvidia steam]
+{"bios":null,"firstRun":true,"items":[{"hint":"Steam on the desktop, started at login","id":"nvidia","kind":"toggle","label":"Gaming on NVIDIA","needs":"","new":false,"on":false,"parent":"","selectable":true,"update":false,"wanted":true},{"hint":"the controller-friendly Steam (untick: Steam's normal window)","id":"bigpicture","kind":"toggle","label":"Steam starts in Big Picture","needs":"","new":false,"on":false,"parent":"nvidia","selectable":true,"update":false,"wanted":true},{"hint":"in the tray at login, no window (untick: Steam's normal window)","id":"nvsilent","kind":"toggle","label":"Start Steam silently","needs":"","new":false,"on":false,"parent":"nvidia","selectable":true,"update":false,"wanted":false},{"hint":"Vapor look (cachyos-vapor)","id":"theme","kind":"toggle","label":"Install SteamOS theme","needs":"","new":false,"on":false,"parent":"","selectable":true,"update":false,"wanted":true},{"hint":"no password, lock screen or log out (SDDM)","id":"single","kind":"toggle","label":"Single user mode","needs":"","new":false,"on":false,"parent":"","selectable":true,"update":false,"wanted":true},{"hint":"the app on the desktop, Steamify Terminal in the launcher","id":"launcher","kind":"toggle","label":"Steamify shortcut","needs":"","new":false,"on":false,"parent":"","selectable":true,"update":false,"wanted":true},{"hint":"a notification when there's a new Steamify, never updates by itself","id":"notify","kind":"toggle","label":"Update notifications","needs":"","new":false,"on":false,"parent":"","selectable":true,"update":false,"wanted":true},{"hint":"Xbox wireless dongle (xone), Xbox controllers over Bluetooth (xpadneo)","id":"extended_controller_support","kind":"toggle","label":"Extended controller support","needs":"","new":false,"on":false,"parent":"","selectable":true,"update":false,"wanted":false},{"hint":"use Steam with the TV remote, TV on/off with the PC (experimental)","id":"cec","kind":"toggle","label":"HDMI-CEC","needs":"","new":false,"on":false,"parent":"","selectable":true,"update":false,"wanted":false}],"pinnedKernel":"7.1.6-1","steamMachine":false,"version":"0.0.0"}
