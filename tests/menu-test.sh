@@ -11,7 +11,7 @@ T="$(mktemp -d)"; trap 'rm -rf "$T"' EXIT
 
 SCRIPT_DIR="$PWD"; HOME="$T/home"; mkdir -p "$HOME"
 VERSION=0.0.0
-for lib in common state packages login-manager single-user steam-desktop steam-machine fremont-poweroff vram-booster hdmi-refresh nvidia controllers cec boot-session vapor-theme steamos-extras bios desktop-shortcut wizard-shortcut steam-game update-notifier first-login menu backend; do
+for lib in $(grep -oP '^for lib in \K.*(?=; do$)' steamify.sh); do
     source "lib/$lib.sh"
 done
 info() { :; }; ok() { :; }; warn() { :; }; err() { :; }
