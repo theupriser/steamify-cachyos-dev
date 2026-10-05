@@ -5,7 +5,7 @@ set -uo pipefail
 here="$(cd "$(dirname "$0")" && pwd)"
 export REPO="${REPO:-$here/../../../steamify-cachyos}"; REPO="$(cd "$REPO" && pwd)"
 backend="${BACKEND:-bash $REPO/steamify.sh}"
-mode="${1:-record}"; failures=0
+mode="${1:-record}"; failures=0; work="$(mktemp -d)"; trap 'rm -rf "$work"' EXIT
 # case name -> backend arguments
 # status: the whole output. plan-*: only the first line of the apply stream (the plan event, where the rules live);
 # the steps after it need the real system (the VM suite), they are not stable with a fake sudo.
@@ -21,8 +21,10 @@ for fixture in "$here"/fixtures/*/; do
     for entry in "${cases[@]}"; do
         label="${entry%%:*}"; arguments="${entry#*:}"
         expected="$here/expected/$name.$label.json"; mkdir -p "$here/expected"
-        actual="$("$here/sandbox.sh" "$fixture" $backend $arguments 2>&1)"
-        [[ "$label" == plan-* ]] && actual="$(head -n 1 <<<"$actual")"
+        if [[ "$label" == plan-* ]]; then   # the plan event comes first; then the steps run for real, so stop after a moment
+            timeout -s KILL 5 "$here/sandbox.sh" "$fixture" $backend $arguments > "$work/stream" 2>&1
+            actual="$(head -n 1 "$work/stream")"
+        else actual="$("$here/sandbox.sh" "$fixture" $backend $arguments 2>&1)"; fi
         if [[ "$mode" == record ]]; then printf '%s\n' "$actual" > "$expected"; echo "recorded $expected"
         elif ! diff -u "$expected" <(printf '%s\n' "$actual"); then echo "FAIL $name $label"; failures=$((failures+1))
         else echo "PASS $name $label"; fi
