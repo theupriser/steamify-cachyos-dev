@@ -1,0 +1,10 @@
+#!/bin/bash
+# Fake pacman for the golden sandbox: the installed packages are listed in $FIXTURE/packages (one name per line).
+# Only the queries the status code makes: -Q/-Qq <pkg>, -T <pkg>..., -Qi <pkg>. Writes (-S, -U, -R) are logged and succeed.
+list="$FIXTURE/packages"; touch "$list" 2>/dev/null
+case "$1" in
+    -T) shift; for package in "$@"; do grep -qx -- "$package" "$list" || echo "$package"; done; [[ $# -gt 0 ]] ;;
+    -Q|-Qq|-Qi|-Qs) shift; status=0; for package in "$@"; do [[ "$package" == -* ]] && continue; grep -qx -- "$package" "$list" || status=1; done; exit $status ;;
+    -Ss|-Si) exit 1 ;;
+    *) echo "pacman $*" >> "${GOLDEN_LOG:-/dev/null}"; exit 0 ;;
+esac

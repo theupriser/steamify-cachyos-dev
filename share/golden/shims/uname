@@ -1,0 +1,2 @@
+#!/bin/bash
+if [[ "$1" == -r ]]; then echo 7.0.0-fixture-cachyos; else command uname "$@"; fi

@@ -4,6 +4,10 @@ All notable changes, per version and per commit. Versions follow
 [Semantic Versioning](https://semver.org/) and were numbered from the start
 of the history.
 
+## Unreleased
+
+- **feat: `share/golden/`: a no-VM sandbox (bubblewrap, fake `/etc` `/sys` `$HOME`, shim `pacman` `systemctl` `sudo` `uname` `modinfo`) and golden `--backend status` and apply `plan` output of the bash 2.11.1 backend for an AMD PC, an NVIDIA PC and a Steam Machine; `record.sh` records, `record.sh check` compares (the Go refactor's safety net)**
+
 ## 0.5.0 - 2026-10-02
 
 The whole automated test (boot loaders plus suites), the Steamify ISO pipeline,

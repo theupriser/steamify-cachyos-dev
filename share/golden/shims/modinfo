@@ -1,0 +1,3 @@
+#!/bin/bash
+# Fake modinfo: modules listed in $FIXTURE/modules exist.
+for module in "$@"; do [[ "$module" == -* ]] || grep -qx -- "$module" "$FIXTURE/modules" 2>/dev/null || exit 1; done

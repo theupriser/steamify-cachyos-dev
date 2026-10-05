@@ -1,0 +1,13 @@
+#!/bin/bash
+# Fake systemctl: enabled units listed in $FIXTURE/enabled-units, active ones in $FIXTURE/active-units.
+# Queries answer from those lists; everything else is logged and succeeds.
+verb=""; units=()
+for argument in "$@"; do
+    [[ "$argument" == -* ]] && continue
+    if [[ -z "$verb" ]]; then verb="$argument"; else units+=("$argument"); fi
+done
+case "$verb" in
+    is-enabled) for unit in "${units[@]}"; do grep -qx -- "$unit" "$FIXTURE/enabled-units" 2>/dev/null || { echo disabled; exit 1; }; done; echo enabled ;;
+    is-active) for unit in "${units[@]}"; do grep -qx -- "$unit" "$FIXTURE/active-units" 2>/dev/null || { echo inactive; exit 3; }; done; echo active ;;
+    *) echo "systemctl $*" >> "${GOLDEN_LOG:-/dev/null}"; exit 0 ;;
+esac

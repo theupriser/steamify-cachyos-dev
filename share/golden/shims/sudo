@@ -1,0 +1,4 @@
+#!/bin/bash
+# Fake sudo: logs the command and succeeds; nothing runs.
+while [[ "$1" == -* ]]; do shift; done
+echo "sudo $*" >> "${GOLDEN_LOG:-/dev/null}"

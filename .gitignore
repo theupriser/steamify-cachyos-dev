@@ -34,3 +34,4 @@ share/*
 *.tmp
 host-keys.pub
 __pycache__/
+!share/golden/
