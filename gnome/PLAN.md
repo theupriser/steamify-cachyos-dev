@@ -1,5 +1,26 @@
 # Steamify on GNOME (GDM): prototype plan
 
+## RESUME HERE (written 2026-10-14, end of the first session)
+State: product branch `feature/gnome-prototype` in steamify-cachyos (pushed, not merged; main is the 2.12.0 release), the theme repo
+`github.com/theupriser/steamify-gnome-theme` (main). Everything is committed; the VM image is NOT in git (it lived in ~/vms/gnome-vm on one laptop).
+
+Rebuild the GNOME test VM on another machine (steamify-cachyos-dev tooling, see its vm-install skill; needs KVM, the Steamify ISO, ~30 min):
+1. `CI=1 VM_DESKTOP=gnome VM_STEAMIFY=skip VM_BOOTLOADER=limine VM_DIR=~/vms/gnome-vm VM_SSH_KEY=<key> REPO=<steamify-cachyos checkout> scripts/vminstall.sh --iso <steamify iso>`
+   (plain CachyOS + GNOME + GDM with autologin; the headless installer ignores "desktop":"gnome", so share/vminstall-post.sh installs cachyos-gnome-settings, gnome, gdm).
+   Boot it with `run.sh` in that dir (add `--vulkan --amd` for venus; gamescope still can't render in the VM).
+2. In the VM, mount the repo (`sudo mount -t 9p -o trans=virtio,version=9p2000.L repo /mnt`; lost at every reboot) and apply the whole set:
+   `cd /mnt && bash steamify.sh --backend apply --reapply --boot desktop gaming glyphs silent launcher notify gnometheme`
+   (`--backend apply <ids>` means EXACTLY that set: ids left out are turned off.)
+3. GNOME Settings with the Desktop panel: copy `steamify-gnome-theme/settings/` into the VM and `makepkg -si` there (~15 min; replaces gnome-control-center).
+4. Gamescope doesn't run in the VM, so to test session switching use a stand-in: `sudo cp -n /usr/share/wayland-sessions/gamescope-session.desktop{,.real}` and set its `Exec=/usr/bin/sleep infinity`. Switch from an ssh session with
+   `systemd-run --user --pipe --quiet /usr/bin/steamos-session-select gamescope|desktop` (the ssh connection dies at every switch; reconnect after ~35 s).
+5. Screenshots from inside the VM: `gdbus call --session --dest org.freedesktop.portal.Desktop --object-path /org/freedesktop/portal/desktop --method org.freedesktop.portal.Screenshot.Screenshot "" "{'interactive': <false>}"` (allow the permission prompt once; files land in ~/Pictures). Needs `XDG_RUNTIME_DIR=/run/user/1000 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus`. Simulated mouse input (ydotool) was unreliable: don't count on it.
+6. The released Steamify app/shortcut doesn't know GNOME: run the branch's app with `python3 /mnt/ui/steamify-ui` (set `XDG_CURRENT_DESKTOP=GNOME` when starting it from ssh).
+
+Open items, in order: (1) dock icon of the Steamify app after a clean login (id + full-path icon are in; unconfirmed after relogin), (2) click-test minimize/maximize in the app's own frame (close works), (3) the Settings panel: trim Ubuntu-specific strings, rebuild with the new icon, distribute the package as a release asset, (4) single user mode for GNOME (lock screen, keyring), (5) KDE+GNOME together: the "preferred desktop" menu row, (6) GNOME regression run in the VM; the KDE regression run is the user's (at home), (7) the app's light/dark: the Qt app is always dark, only its frame is ours.
+Tips learned: `pkill -x` fails for names over 15 chars (use `pkill -f`); polling the VM over ssh during a relogin keeps the old user manager alive; never edit a launcher entry while the shell runs and judge the icon right away (relogin first).
+
+
 Started 2026-10-14. Goal: Steamify's SteamOS conversion on a GNOME desktop
 (GDM), detected automatically; KDE keeps working. First a prototype to see it
 work, then something solid. Product branch: `feature/gnome-prototype` in
