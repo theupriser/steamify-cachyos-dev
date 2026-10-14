@@ -47,3 +47,9 @@ plus pacman hook, relogin by restarting gdm).
 - A failed gamescope session (VM) lands on GDM's login screen; SDDM relogin loops instead. Real hardware untested.
 - Menu: theme and single user mode hidden on GNOME.
 - ssh into the VM dies at every switch (terminate-user): reconnect.
+
+## Status 2026-10-14 (evening)
+- Verified in the VM with screenshots (portal screenshot: permission granted once in the VM, `gdbus ... org.freedesktop.portal.Screenshot.Screenshot "" "{'interactive': <false>}"`, file in ~/Pictures): desktop icons (DING) show Home, Trash, Return to Gaming Mode, Steam; Steam tray icon shows in the top bar (AppIndicator); Steam starts and logs in. GNOME extras installed on GNOME: kconfig, accountsservice, gnome-shell-extension-desktop-icons-ng, gnome-shell-extension-appindicator, extension-manager.
+- The relogin helper waits on /run/user/<uid>, not `loginctl show-user` (which lingers ~10 s).
+- NOT done: the `launcher` option (Steamify shortcut/app in the launcher and Steamify Terminal): only `gaming` was applied in the VM, so no Steamify app is installed. On GNOME it still needs: Konsole -> GNOME terminal (Ptyxis/Console) for Steamify Terminal; it downloads the newest GitHub release (without GNOME support until released).
+- Not done either: `silent` (Steam starts on the desktop), the other options (notify, glyphs, ...), boot option, turn-off, KDE regression.
