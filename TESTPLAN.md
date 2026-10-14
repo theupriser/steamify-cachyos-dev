@@ -64,21 +64,24 @@ change only shows right after Enter).
 
 ## F. Features per release
 
-### F2.10.0 Gaming on NVIDIA (`feature/nvidia-gaming-fix`; suite `nvidia`, fake NVIDIA PC)
+### F2.12.0 The SteamOS conversion on NVIDIA (`release/2.12.0`; suite `nvidia`, fake NVIDIA PC)
 
-gamescope's session is broken on NVIDIA (see `nvidia/HARDWARE-RESULTS.md`), so on an NVIDIA PC the conversion is replaced by
-"Gaming on NVIDIA" (Steam on the Plasma desktop, started at login, optionally in Big Picture) and single user mode logs in to Plasma.
-The VM has no NVIDIA GPU: `fake_nvidia` (`share/vmtest/prelude.sh`) fakes one through Steamify's `NVIDIA_DRM_DIR` test hook and installs
-fake NVIDIA modules for every kernel. What no VM can show (real driver, the picture, Big Picture on a real GPU) is checked on the real PC.
+Since 2.12.0 "Gaming on NVIDIA" (Steam on the desktop) is replaced by the SteamOS conversion with a patched gamescope
+(`lib/gamescope-nvidia.sh`, package from `steamify-gamescope-nvidia`: GBM scan-out cures the corrupted picture) and the DRM kernel
+parameters / initramfs setup of `lib/nvidia.sh`. The VM has no NVIDIA GPU: `fake_nvidia` (`share/vmtest/prelude.sh`) fakes one
+through Steamify's `NVIDIA_DRM_DIR` test hook and installs fake NVIDIA modules for every kernel; `vulkan-swrast` (lavapipe) gives
+gamescope's smoke test a Vulkan device. What no VM can show (real driver, the picture, the display mode, suspend, Steam on a real GPU)
+is checked on the real RTX 5080 PC (N6).
 
 | # | Step | Expect |
 |---|---|---|
-| N1 | `--defaults --list` and `--backend status` with the fake GPU (`nvidia/10-n1-menu.sh`) | `nvidia`, `bigpicture` (parent `nvidia`), `single` offered and preselected; `gaming`, `boot`, `glyphs` hidden; without the fake GPU the conversion is offered and `nvidia` is not |
-| N2 | `--defaults --options nvidia,bigpicture,single` (`nvidia/20-n2-n5-lifecycle.host.sh`) | exit 0; Steam installed; unit with `-gamepadui` enabled; `loginMode=emptySession`; parameters in `/etc/default/limine` and `/boot/limine.conf`; early-load file, hook and script; modules in the initramfs; SDDM enabled and `zzz-steamify-autologin.conf` (Plasma session) |
-| N3 | reboot | Plasma straight in (no greeter), parameters on `/proc/cmdline`, the Steam unit started, `loginMode` kept |
-| N4 | `--defaults --options notify` | exit 0; Steam removed (Steamify installed it), unit and autologin file gone, `loginMode` back to not set, parameters/early-load/hook gone, plasma-login-manager the login manager again |
-| N5 | reboot | Plasma up through the test autologin, no NVIDIA parameters |
-| N6 | real RTX 5080 PC | **done by hand 2026-10-01** (earlier prototype): Big Picture on the Plasma desktop smooth and clean; the apply/boot of the final component is the user's next step |
+| N1 | `--defaults --list` and `--backend status` with and without the fake GPU (`nvidia/10-n1-menu.sh`) | `gaming`, `boot`, `glyphs`, `single` offered; `nvidia`, `bigpicture`, `nvsilent` hidden; the same menu without the GPU |
+| G1 | `nvidia/15-g1-gamescope-nvidia-functions.sh` (no install) | version compare; CPU level; every pinned sha256 is a hash and the PKGBUILD builds the pinned version; no GitHub: no latest tag, a damaged backup copy refused, one with a matching hash used; update notice (newer / same / offline); pre-flight refuses a pacman lock; failure reminder set and cleared; environment files idempotent and keep other lines; display wrapper + drop-in installed/removed, a foreign file at the wrapper's path kept |
+| N2 | pacman locked, `--defaults --options gaming` (`nvidia/20-n2-n5-lifecycle.host.sh`) | exit not 0, names `db.lck`, no patched gamescope, no kernel parameters |
+| N3 | 2.11 state ("Gaming on NVIDIA": Steam + autostart unit), then `--options gaming` | the menu shows the conversion as an update; exit 0; autostart unit gone, Steam stays; patched gamescope installed (pinned or newer) and provides `gamescope`; smoke test passes; environment files, display wrapper, kernel parameters (`/etc/default/limine`, `/boot/limine.conf`), early-load file, hook, modules in the initramfs; second run downloads and installs nothing; reboot: parameters on `/proc/cmdline` |
+| N4 | (part of N3) | the old autostart unit is gone, Steam stays |
+| N5 | package removed + no GitHub: `gsn_install_package`; then `--options notify` | installed again from the download cache and starts; turn-off: environment files, wrapper, drop-in, kernel parameters, early-load file, hook gone; patched gamescope package stays |
+| N6 | real RTX 5080 PC | **by hand**: gaming mode picture clean (no corruption), display's own mode and refresh rate, Steam UI size, switching to the desktop and back, suspend/resume, newer-release update notice |
 
 ### F2.10.0 Extended controller support (`feature/extended-controller-support`; suite `cli`, block `60-c1-controllers.sh`)
 
@@ -172,3 +175,4 @@ and started with `--fremont`. Automated: `scripts/vmtest.sh` (see the vm-install
 | 2026-09-29 | Steamify `release/2.9.1` (CEC driver cache), ISO `feat/steamify` (PRs #2, #3), dev `main` | everything automated incl. hw block 50 (CEC cache) and the B1 boot entry check | **341 pass, 0 fail** in 19 minutes (toggles 42 +1 expected skip, hw 77, cli 55, menu 36, installer 4, Limine 43, systemd-boot 42, GRUB 42) |
 | 2026-09-30 | Steamify 2.9.6 (`steamify-cachyos` main `d93f9ea`), the official ISO `steamify-cachyos-2.9.6-260930-x86_64.iso` from git.upriser.nl (sha256 `4a94f308…aec41`), dev `main`; on the PC, headless (`CI=1`/`VM_HEADLESS=1`), `MAX_PARALLEL=5` | everything automated: B1-B8 (3 loaders, `--install` from the new ISO), cli, menu, hw, installer, toggles (base VM from the same ISO with `VM_STEAMIFY=skip`) | **341 pass, 0 fail** (toggles 42 +1 expected skip, hw 77, cli 55, menu 36, installer 4, Limine 43, systemd-boot 42, GRUB 42). Found on the way (test setup, not Steamify or the ISO): with five VMs at once the loaders' first boot took longer than `waitssh` waited (5 min), so all three stopped with `FAIL no SSH` although the VMs were up; `waitssh` now waits up to 15 minutes and the loaders were run again (install kept) |
 | 2026-10-01 | Steamify `feature/extended-controller-support` (7dae14c; on top of `feature/nvidia-gaming-fix` d0e4d8c, 2.9.7), plain CachyOS ISO 260809 (VM `~/vms/steamify-vm`, `vminstall.sh --iso`), dev `main` + the nvidia suite; on the PC (native CachyOS, KVM), headless | N1-N5 (new suite `nvidia`), C1-C3 (cli block 60), R1.1-R1.6/R1.10, H1-H5 and the CEC/CEC cache blocks, R2.1, toggles | **269 pass, 0 fail**: cli 65, nvidia 43, menu 37, hw 78, installer 4, toggles 42. Found on the way (test side, not Steamify): R1.1 and H3 pressed menu rows by number and the new Extended controller support row shifted them (now by name); the N4 check for the parameter in `/boot/limine.conf` must ignore snapper's snapshot entries, which keep the command line of their time. The kernel part (parameters, early-load file, hook, initramfs) behaves in a real Limine VM; the real driver and picture are only checked on the RTX 5080 PC |
+| 2026-10-14 | Steamify `release/2.12.0` (dc189dc), plain CachyOS VM `~/vms/steamify-vm` (new ssh key: the old throwaway one was gone, authorized in the `ssh-ready` snapshot), dev `main` + the new nvidia suite; on the laptop (Ubuntu, KVM), headless | cli, menu, hw, installer, toggles, nvidia (N1, G1, N2-N5 rewritten for 2.12.0); boot loaders and the plain-PC install check not run (need the Steamify ISO) | **292 pass, 0 fail** (cli 65, menu 37, hw 78, installer 4, toggles 42, nvidia 66). Before the rewrite the old nvidia suite failed 8 checks, all because "Gaming on NVIDIA" is gone in 2.12.0. Test side: gamescope's smoke test needs a Vulkan device, so the VM gets `vulkan-swrast`; after a reboot the same gamescope fails with `vkAllocateMemory failed (-2)` on lavapipe in this VM (before the reboot it passes), so the offline-reinstall check runs before the reboot. Not seen on real hardware yet (N6) |

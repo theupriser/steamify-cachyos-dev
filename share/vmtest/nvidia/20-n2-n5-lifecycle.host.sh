@@ -1,51 +1,66 @@
-# N2-N5: Gaming on NVIDIA + Big Picture + Single user mode on a fake NVIDIA PC, for real: pacman installs Steam, the SDDM autologin,
-# the boot loader files and the initramfs, then a reboot into Plasma, then everything off again and a second reboot.
-# Covers TESTPLAN N2 (apply), N3 (after the reboot), N4 (turn off), N5 (after the second reboot).
+# N2-N5 (2.12.0): the SteamOS conversion on a fake NVIDIA PC, for real (pacman, the patched gamescope from GitHub, limine, initramfs).
+# Covers TESTPLAN N2 (failure leaves the PC as it was), N3 (apply), N4 (the update path from "Gaming on NVIDIA"), N5 (offline reinstall
+# from the cache, turn off).
 unit='~/.config/systemd/user/steamify-steam-autostart.service'
 g() { guest "$@"; }
 yes_() { [[ "$(g "$1 && echo YES || echo NO" | tail -n 1)" == YES ]]; }   # a guest condition
-info "N2 applying nvidia,bigpicture,single (Steam, SDDM, initramfs: several minutes)..."
-rc="$(g 'fake_nvidia; sf --defaults --options nvidia,bigpicture,single > /tmp/n2.log; echo "rc=$?"' | tail -n 1)"
-[[ "$rc" == rc=0 ]] && pass "N2 apply exit 0" || { fail "N2 apply: $rc: $(g 'tail -n 15 /tmp/n2.log')"; return 0 2>/dev/null || exit 0; }
-yes_ 'pacman -Q steam >/dev/null 2>&1' && pass "N2 Steam is installed" || fail "N2 Steam missing"
-yes_ "grep -qx 'ExecStart=/usr/bin/steam -gamepadui' $unit" && pass "N2 the autostart unit starts Steam with -gamepadui" || fail "N2 unit: $(g "cat $unit")"
-yes_ 'systemctl --user is-enabled -q steamify-steam-autostart.service' && pass "N2 the unit is enabled" || fail "N2 unit not enabled"
-[[ "$(g 'kreadconfig6 --file ksmserverrc --group General --key loginMode' | tail -n 1)" == emptySession ]] && pass "N2 Plasma starts with an empty session" || fail "N2 loginMode"
-g 'is nvidia && is bigpicture && echo ON' | grep -qx ON && pass "N2 nvidia and bigpicture report on" || fail "N2 status functions"
-yes_ "grep -q 'nvidia-drm.modeset=1 nvidia-drm.fbdev=1' /etc/default/limine" && pass "N2 the kernel parameters are in /etc/default/limine" || fail "N2 limine defaults"
-yes_ "sudo grep -q 'nvidia-drm.fbdev=1' /boot/limine.conf" && pass "N2 and in the generated /boot/limine.conf" || fail "N2 limine.conf"
-yes_ 'test -f /etc/mkinitcpio.conf.d/90-steamify-nvidia.conf && test -x /usr/local/libexec/steamify-nvidia-initramfs && test -f /etc/pacman.d/hooks/85-steamify-nvidia-initramfs.hook' && pass "N2 early-load file, hook and its script installed" || fail "N2 initramfs files"
-yes_ 'sudo find /boot -name "initramfs*" -exec sh -c "lsinitcpio {} | grep -q nvidia" \; -print | grep -q .' && pass "N2 the NVIDIA modules are in the initramfs" || fail "N2 initramfs has no nvidia modules"
-yes_ 'systemctl is-enabled -q sddm.service' && pass "N2 SDDM is the login manager" || fail "N2 sddm not enabled"
-yes_ "grep -qx 'Session=plasma.desktop' /etc/sddm.conf.d/zzz-steamify-autologin.conf && grep -qx \"User=\$USER\" /etc/sddm.conf.d/zzz-steamify-autologin.conf" && pass "N2 SDDM autologin: the user into the Plasma session" || fail "N2 autologin file: $(g 'cat /etc/sddm.conf.d/zzz-steamify-autologin.conf')"
-yes_ 'is single' && pass "N2 single user mode is on" || fail "N2 single not on"
-g 'fake_nvidia; sf --defaults --options nvidia,bigpicture,single | tail -n 3' | grep -qiE 'nothing|already|exit: 0' && pass "N2 a second run is quiet" || info "N2 second run: $(g 'fake_nvidia; sf --defaults --options nvidia,bigpicture,single | tail -n 3')"
 
-reboot_guest && pass "N3 the VM is back after the reboot" || { fail "N3 no ssh after the reboot"; return 0 2>/dev/null || exit 0; }
-up=""; for _ in $(seq 40); do vm_ssh "pgrep -u $VM_USER -x plasmashell" >/dev/null 2>&1 && { up=1; break; }; sleep 3; done
-[[ -n "$up" ]] && pass "N3 Plasma straight after the boot (SDDM autologin, no greeter)" || fail "N3 no plasmashell after the reboot"
-yes_ '! pgrep -x sddm-greeter >/dev/null' && pass "N3 no greeter running" || fail "N3 sddm-greeter is running"
-yes_ 'grep -q "nvidia-drm.modeset=1" /proc/cmdline && grep -q "nvidia-drm.fbdev=1" /proc/cmdline' && pass "N3 the kernel parameters are on the running command line" || fail "N3 cmdline: $(g 'cat /proc/cmdline')"
-yes_ 'systemctl is-active -q sddm.service' && pass "N3 sddm is the running display manager" || fail "N3 sddm not active"
-yes_ 'journalctl --user -b --no-pager -u steamify-steam-autostart.service | grep -qiE "Started|Starting"' && pass "N3 the Steam autostart unit was started at login" || fail "N3 unit never started: $(g 'systemctl --user status steamify-steam-autostart.service 2>&1 | head -n 8')"
-[[ "$(g 'kreadconfig6 --file ksmserverrc --group General --key loginMode' | tail -n 1)" == emptySession ]] && pass "N3 the empty session setting survived" || fail "N3 loginMode after the reboot"
+# N2: a locked pacman database: the run fails, says why and changes nothing (the pre-flight's own messages are checked in G1).
+g 'sudo touch /var/lib/pacman/db.lck'
+rc="$(g 'fake_nvidia; sf --defaults --options gaming > /tmp/n2.log; echo "rc=$?"' | tail -n 1)"
+g 'sudo rm -f /var/lib/pacman/db.lck'
+[[ "$rc" != rc=0 ]] && pass "N2 a locked pacman database: the run fails ($rc)" || fail "N2 the run passed with pacman locked"
+yes_ 'grep -q "db.lck" /tmp/n2.log' && pass "N2 and names the lock" || fail "N2 no reason in the log: $(g 'tail -n 8 /tmp/n2.log')"
+yes_ '! pacman -Q steamify-gamescope-nvidia >/dev/null 2>&1 && ! grep -q nvidia-drm /etc/default/limine' && pass "N2 nothing was installed or changed" || fail "N2 the failed run changed the PC"
 
-info "N4 turning everything off (only notify stays)..."
-rc="$(g 'fake_nvidia; sf --defaults --options notify > /tmp/n4.log; echo "rc=$?"' | tail -n 1)"
-[[ "$rc" == rc=0 ]] && pass "N4 turn-off exit 0" || { fail "N4 turn-off: $rc: $(g 'tail -n 15 /tmp/n4.log')"; return 0 2>/dev/null || exit 0; }
-yes_ '! pacman -Q steam >/dev/null 2>&1' && pass "N4 Steam is removed again (Steamify installed it)" || fail "N4 Steam is still installed"
-yes_ "! test -e $unit" && pass "N4 the autostart unit is gone" || fail "N4 unit still there"
-[[ -z "$(g 'kreadconfig6 --file ksmserverrc --group General --key loginMode' | tail -n 1)" ]] && pass "N4 loginMode is back to not set" || fail "N4 loginMode: $(g 'kreadconfig6 --file ksmserverrc --group General --key loginMode')"
-yes_ '! grep -q nvidia-drm /etc/default/limine' && pass "N4 the kernel parameters are gone from /etc/default/limine" || fail "N4 limine defaults still have them"
-# Snapshot entries (snapper's, rootflags=.../.snapshots/N/snapshot) keep the command line of their time: a snapshot of the state with the
-# parameters is meant to boot that state. Only the current boot entries count.
-yes_ "! sudo grep 'cmdline:' /boot/limine.conf | grep -v '\.snapshots/' | grep -q nvidia-drm" && pass "N4 and from the current entries in /boot/limine.conf (snapshot entries keep their old command line)" || fail "N4 limine.conf still has them: $(g "sudo grep 'cmdline:' /boot/limine.conf | grep -v '\.snapshots/' | cut -c1-150" | tr '\n' '|')"
-yes_ '! test -e /etc/mkinitcpio.conf.d/90-steamify-nvidia.conf && ! test -e /usr/local/libexec/steamify-nvidia-initramfs && ! test -e /etc/pacman.d/hooks/85-steamify-nvidia-initramfs.hook' && pass "N4 early-load file, hook and script removed" || fail "N4 initramfs files remain"
-yes_ '! test -e /etc/sddm.conf.d/zzz-steamify-autologin.conf' && pass "N4 the SDDM autologin file is gone" || fail "N4 autologin file remains"
-yes_ 'systemctl is-enabled -q plasmalogin.service && ! systemctl is-enabled -q sddm.service' && pass "N4 plasma-login-manager is the login manager again" || fail "N4 login manager: $(g 'systemctl show -p Id --value display-manager')"
-yes_ '! is nvidia && ! is bigpicture && ! is single' && pass "N4 nvidia, bigpicture and single report off" || fail "N4 status still on"
+# The VM has no GPU: gamescope's smoke test needs a Vulkan device, so the software one (lavapipe) goes in first, as a real PC has its driver.
+g 'sudo pacman -S --needed --noconfirm vulkan-swrast > /tmp/swrast.log 2>&1' >/dev/null
 
-reboot_guest && pass "N5 the VM is back after the second reboot" || { fail "N5 no ssh after the second reboot"; return 0 2>/dev/null || exit 0; }
-up=""; for _ in $(seq 40); do vm_ssh "pgrep -u $VM_USER -x plasmashell" >/dev/null 2>&1 && { up=1; break; }; sleep 3; done
-[[ -n "$up" ]] && pass "N5 Plasma comes up (the test autologin of plasma-login-manager)" || fail "N5 no plasmashell after the second reboot"
-yes_ '! grep -q "nvidia-drm" /proc/cmdline' && pass "N5 the kernel parameters are off the command line" || fail "N5 cmdline still has them"
+# N4 first state: "Gaming on NVIDIA" as 2.11 left it (Steam on the desktop, started at login).
+info "N4 setting up the 2.11 state (Gaming on NVIDIA: Steam, autostart unit)..."
+g 'sudo pacman -S --needed --noconfirm steam > /tmp/steam.log 2>&1; fake_nvidia; nvidia_write_unit -gamepadui && user_systemctl enable steamify-steam-autostart.service' >/dev/null
+yes_ 'fake_nvidia; nvidia_status' && pass "N4 the old Gaming on NVIDIA state is on" || fail "N4 could not set the old state up"
+python3 -c 'import json,sys; d={i["id"]:i for i in json.load(sys.stdin)["items"]}; sys.exit(0 if d["gaming"].get("update") and d["gaming"]["on"] else 1)' <<< "$(g 'fake_nvidia; sf --backend status' | sed -n '/^[\[{]/,$p')" 2>/dev/null && pass "N4 the menu shows the conversion as an update, ticked" || info "N4 menu: $(g 'fake_nvidia; sf --backend status' | head -c 400)"
+
+# N3: apply the conversion.
+info "N3 applying gaming (Steam, gamescope-session, the patched gamescope from GitHub, initramfs: several minutes)..."
+rc="$(g 'fake_nvidia; sf --defaults --options gaming > /tmp/n3.log; echo "rc=$?"' | tail -n 1)"
+[[ "$rc" == rc=0 ]] && pass "N3 apply exit 0" || { fail "N3 apply: $rc: $(g 'tail -n 20 /tmp/n3.log')"; return 0 2>/dev/null || exit 0; }
+yes_ '! test -e ~/.config/systemd/user/steamify-steam-autostart.service && ! systemctl --user is-enabled -q steamify-steam-autostart.service' && pass "N4 the old autostart unit is gone (Steam no longer starts on the desktop)" || fail "N4 the autostart unit is still there"
+yes_ 'pacman -Q steam >/dev/null 2>&1' && pass "N4 Steam stays installed" || fail "N4 Steam was removed"
+ver="$(g 'pacman -Q steamify-gamescope-nvidia' | tail -n 1 | awk '{print $2}')"
+pin="$(g 'fake_nvidia; echo $GSN_VERSION' | tail -n 1)"
+[[ -n "$ver" && "$(printf '%s\n%s\n' "$pin" "$ver" | sort -V | head -n 1)" == "$pin" ]] && pass "N3 the patched gamescope is installed: $ver (pinned $pin or newer)" || fail "N3 patched gamescope: '$ver' (pin $pin)"
+yes_ 'gamescope --version 2>&1 | grep -qi gamescope; pacman -Qi steamify-gamescope-nvidia | grep -q "^Provides.*gamescope"' && pass "N3 it provides gamescope (the stock one is replaced)" || fail "N3 not providing gamescope"
+yes_ 'fake_nvidia; gsn_smoke_test' && pass "N3 the smoke test: the installed gamescope starts headless and runs a program" || fail "N3 smoke test failed"
+yes_ 'fake_nvidia; gsn_status && is gaming' && pass "N3 gaming and the patched gamescope report on" || fail "N3 status"
+yes_ 'grep -qx gamescope_drm_gbm_scanout=1 ~/.config/environment.d/99-steamify-gamescope-nvidia.conf && grep -qx gamescope_drm_gbm_scanout=1 ~/.config/gamescope-session/environment' && pass "N3 the GBM scan-out setting is in the session's environment files" || fail "N3 env files"
+yes_ 'fake_nvidia; gsn_display_status' && pass "N3 the display-mode wrapper and its drop-in are installed" || fail "N3 display wrapper"
+yes_ 'systemctl --user cat gamescope-session.service 2>/dev/null | grep -q "steamify-display\|\.local/share/steamify/bin"' && pass "N3 the gaming session unit uses the wrapper (drop-in loaded)" || info "N3 gamescope-session.service not loadable here: $(g 'systemctl --user cat gamescope-session.service 2>&1 | tail -n 4')"
+yes_ "grep -q 'nvidia-drm.modeset=1 nvidia-drm.fbdev=1' /etc/default/limine && sudo grep -q 'nvidia-drm.fbdev=1' /boot/limine.conf" && pass "N3 the DRM kernel parameters are in /etc/default/limine and /boot/limine.conf" || fail "N3 kernel parameters"
+yes_ 'test -f /etc/mkinitcpio.conf.d/90-steamify-nvidia.conf && test -f /etc/pacman.d/hooks/85-steamify-nvidia-initramfs.hook' && pass "N3 early-load file and initramfs hook installed" || fail "N3 initramfs files"
+yes_ 'sudo find /boot -name "initramfs*" -exec sh -c "lsinitcpio {} | grep -q nvidia" \; -print | grep -q .' && pass "N3 the NVIDIA modules are in the initramfs" || fail "N3 initramfs has no nvidia modules"
+yes_ '! grep -q "failed" <<< "$(fake_nvidia; state_get gamescope_nvidia failed)" && [[ -z "$(fake_nvidia; state_get gamescope_nvidia failed)" ]]' && pass "N3 the earlier failure mark is cleared" || fail "N3 failure mark remains"
+yes_ 'grep -q "Patched gamescope installed" /tmp/n3.log' && pass "N3 the log says the patched gamescope was installed" || info "N3 log: $(g 'grep -i gamescope /tmp/n3.log | tail -n 5')"
+out="$(g 'fake_nvidia; sf --defaults --options gaming')"
+echo "$out" | grep -qiE 'Downloading|Installing|Building' && fail "N3 a second run downloads or installs again: $(echo "$out" | tail -n 5)" || pass "N3 a second run changes nothing (no download, no install)"
+# N5 (before the reboot: after a boot lavapipe in this VM fails vkAllocateMemory for gamescope, see TESTPLAN G-notes): the package is gone and GitHub can't be reached: the copy in the cache is installed again, and still starts.
+info "N5 removing the patched gamescope, no GitHub: reinstall from the download cache..."
+rc="$(g 'fake_nvidia; sudo pacman -Rdd --noconfirm steamify-gamescope-nvidia >/dev/null 2>&1; GSN_RELEASES=http://127.0.0.1:9 gsn_install_package > /tmp/n5.log 2>&1; echo "rc=$?"' | tail -n 1)"
+[[ "$rc" == rc=0 ]] && yes_ 'pacman -Q steamify-gamescope-nvidia >/dev/null 2>&1' && pass "N5 offline: installed again from the cache" || fail "N5 offline reinstall ($rc): $(g 'tail -n 8 /tmp/n5.log')"
+yes_ 'fake_nvidia; gsn_smoke_test' && pass "N5 and it starts" || fail "N5 smoke test after the reinstall"
+
+reboot_guest && pass "N3 the VM boots with the DRM parameters and the NVIDIA initramfs" || { fail "N3 no ssh after the reboot"; return 0 2>/dev/null || exit 0; }
+yes_ 'grep -q "nvidia-drm.modeset=1" /proc/cmdline && grep -q "nvidia-drm.fbdev=1" /proc/cmdline' && pass "N3 the parameters are on the running command line" || fail "N3 cmdline: $(g 'cat /proc/cmdline')"
+
+# N5: turn off.
+info "N5 turning the conversion off..."
+rc="$(g 'fake_nvidia; sf --defaults --options notify > /tmp/n5off.log; echo "rc=$?"' | tail -n 1)"
+[[ "$rc" == rc=0 ]] && pass "N5 turn-off exit 0" || { fail "N5 turn-off: $rc: $(g 'tail -n 15 /tmp/n5off.log')"; return 0 2>/dev/null || exit 0; }
+yes_ '! test -e ~/.config/environment.d/99-steamify-gamescope-nvidia.conf && ! grep -qs gbm_scanout ~/.config/gamescope-session/environment' && pass "N5 the GBM setting is gone from both files" || fail "N5 env files remain"
+yes_ '! test -e ~/.local/share/steamify/bin/gamescope && ! test -e ~/.config/systemd/user/gamescope-session.service.d/steamify-display.conf' && pass "N5 the display wrapper and drop-in are gone" || fail "N5 display files remain"
+yes_ '! grep -q nvidia-drm /etc/default/limine' && pass "N5 the kernel parameters are gone from /etc/default/limine" || fail "N5 limine defaults"
+yes_ "! sudo grep 'cmdline:' /boot/limine.conf | grep -v '\.snapshots/' | grep -q nvidia-drm" && pass "N5 and from the current entries of /boot/limine.conf" || fail "N5 limine.conf"
+yes_ '! test -e /etc/mkinitcpio.conf.d/90-steamify-nvidia.conf && ! test -e /etc/pacman.d/hooks/85-steamify-nvidia-initramfs.hook' && pass "N5 early-load file and hook removed" || fail "N5 initramfs files remain"
+yes_ 'pacman -Q steamify-gamescope-nvidia >/dev/null 2>&1' && pass "N5 the patched gamescope package stays (like the conversion's other packages)" || fail "N5 package removed"
+yes_ '! is gaming' && pass "N5 gaming reports off" || fail "N5 gaming still on"
