@@ -28,6 +28,14 @@ chmod 440 /etc/sudoers.d/99-test-vm
 # doesn't need a desktop.
 if [[ -f /etc/sddm.conf.d/10-gamescope-autologin.conf ]]; then
     echo "Steamify's gaming-mode login (SDDM) kept."
+elif [[ "${VM_DESKTOP:-kde}" == gnome ]]; then
+    # GNOME install (VM_DESKTOP=gnome): GDM logs in by itself, like the Plasma one below.
+    # The headless installer only lays down the base for "gnome": the desktop is installed here, the set CachyOS's installer picks.
+    pacman -Q gdm >/dev/null 2>&1 || pacman -S --needed --noconfirm cachyos-gnome-settings gnome gdm ||
+        pacman -S --needed --noconfirm gnome gdm
+    systemctl enable gdm.service
+    mkdir -p /etc/gdm
+    printf '[daemon]\nAutomaticLoginEnable=True\nAutomaticLogin=%s\n' "$VM_USER" > /etc/gdm/custom.conf
 else
     pacman -Q plasma-login-manager >/dev/null 2>&1 || pacman -S --needed --noconfirm plasma-login-manager
     systemctl disable sddm.service 2>/dev/null || true

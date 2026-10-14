@@ -25,11 +25,11 @@ plus pacman hook, relogin by restarting gdm).
 `CI=1 VM_DESKTOP=gnome VM_STEAMIFY=skip VM_DIR=~/vms/gnome-vm VM_SSH_KEY=~/vms/steamify-vm/vmkey REPO=<steamify-cachyos> scripts/vminstall.sh --iso ~/vms/iso-dl/steamify-cachyos-2.12.0-dev-261014-x86_64.iso` (PATH with ~/vms/shim, `sg kvm -c`). Plain CachyOS GNOME, Steamify applied by hand afterwards.
 
 ## Steps
-1. [ ] GNOME VM installed (install running, log ~/vms/gnome-install.out); snapshots clean/ssh-ready.
-2. [ ] Run `steamify.sh --defaults --options gaming` in the VM (repo on 9p /mnt); fix what breaks (kconfig, packages, shellcheck).
-3. [ ] Check: custom.conf, AccountsService, hook, sudoers, our tools in place.
-4. [ ] Reboot: GDM autologs into the gamescope session (loginctl session desktop/type; gamescope may not render in the VM, a running session is enough).
-5. [ ] `steamos-session-select desktop` -> GNOME session; Return to Gaming Mode shortcut -> gamescope again; reboot persistence; `boot` option.
+1. [x] GNOME VM installed (~/vms/gnome-vm; the headless installer ignores "desktop":"gnome", so vminstall-post.sh installs cachyos-gnome-settings + gnome + gdm).
+2. [x] Run `steamify.sh --defaults --options gaming` in the VM (repo on 9p /mnt); fix what breaks (kconfig, packages, shellcheck).
+3. [x] Check: custom.conf, AccountsService, hook, sudoers, our tools in place.
+4. [x] (gamescope itself dies in the VM: Vulkan/DRM scanout errors, also without GNOME; GDM did start it) Reboot: GDM autologs into the gamescope session (loginctl session desktop/type; gamescope may not render in the VM, a running session is enough).
+5. [~] (gamescope->GNOME and GNOME->gamescope verified with a stand-in gamescope session (Exec=sleep infinity in /usr/share/wayland-sessions/gamescope-session.desktop, original kept as .real); reboot persistence, `boot` option and the shortcut click not yet) `steamos-session-select desktop` -> GNOME session; Return to Gaming Mode shortcut -> gamescope again; reboot persistence; `boot` option.
 6. [ ] Turn off: everything restored (custom.conf backup, original tools).
 7. [ ] KDE regression: existing suites still pass on the KDE VM.
 8. [ ] Commit dev-repo changes (VM_DESKTOP) to main; product branch stays a prototype, no release without the user.
@@ -39,3 +39,11 @@ plus pacman hook, relogin by restarting gdm).
 - GNOME theme based on the Vapor Plasma theme (user idea: colours, wallpaper, icons; shell/GTK parts new). Single user mode and the other KDE-only parts (powerdevil in steam-machine, first-login, update notifier) need GNOME versions or stay hidden.
 - Decide: keep replacing CachyOS's two files, or get GDM support upstream into gamescope-session-cachyos.
 - Real hardware: GDM restart behaviour, Steam's Switch to Desktop button.
+
+## Findings so far (2026-10-14)
+- GDM logs in by itself only when it starts. A switch = set the session in AccountsService, `loginctl terminate-user`, `systemctl restart gdm` (patches/steamify-gdm-relogin.sh, run through sudo from inside the session, as a transient unit because ending the user kills the caller). Without ending the user first, GNOME refuses: "A graphical session is already running!". Waiting for the user manager to exit only keeps GDM's login screen up (10 s): no wait = about 1.4 s to GNOME.
+- Both `Session=` and `XSession=` are written to AccountsService; GDM picked the right session. (Which one is needed is untested: could drop one.)
+- cachyos-gamescope-autologin.service resets the session to gamescope when a desktop session ends (Deck behaviour), so after GNOME the next login is gamescope again.
+- A failed gamescope session (VM) lands on GDM's login screen; SDDM relogin loops instead. Real hardware untested.
+- Menu: theme and single user mode hidden on GNOME.
+- ssh into the VM dies at every switch (terminate-user): reconnect.

@@ -14,7 +14,7 @@
 #      VM_INSTALL_MEM (RAM of the live installer VM only; default VM_MEM, else run.sh's 8G),
 #      VM_CACHE (host dir for the packages, default ~/vms/pkg-cache; empty = none),
 #      VM_STEAMIFY (a Steamify ISO also runs steamify-install: the Steamify page's ids,
-#      empty = defaults, skip = plain CachyOS), VM_BOOTLOADER (limine; or systemd-boot, grub), VM_TIMEZONE (the host's), VM_HOST_IP (the host as the guest sees it,
+#      empty = defaults, skip = plain CachyOS), VM_DESKTOP (kde; or gnome: GDM, autologin into GNOME), VM_BOOTLOADER (limine; or systemd-boot, grub), VM_TIMEZONE (the host's), VM_HOST_IP (the host as the guest sees it,
 #      10.0.2.2 with QEMU's user networking).
 # The VM's user and key are recorded in $VM_DIR (vm-user, ssh-key) for the
 # other scripts. Never touches your existing SSH keys or ~/.ssh/known_hosts.
@@ -134,11 +134,11 @@ port="$(python3 -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1",0)); p
 sed -e "s/@PORT@/$port/" -e "s/@HOST_IP@/$host_ip/" "$repo/share/vminstall-live.sh" > "$www/vminstall-live.sh"
 cp "$repo/share/vminstall-post.sh" "$www/"
 {
-    printf 'VM_USER=%q\nVM_HOSTNAME=%q\nVM_PUBKEY=%q\nDEVICE=/dev/vda\nVM_STEAMIFY=%q\n' "$VM_USER" "$hostname" "$pubkey" "${VM_STEAMIFY:-}"
+    printf 'VM_USER=%q\nVM_HOSTNAME=%q\nVM_PUBKEY=%q\nDEVICE=/dev/vda\nVM_STEAMIFY=%q\nVM_DESKTOP=%q\n' "$VM_USER" "$hostname" "$pubkey" "${VM_STEAMIFY:-}" "${VM_DESKTOP:-kde}"
 } > "$www/vminstall.env"
-python3 - "$www/settings.json" "$VM_USER" "$password" "$timezone" "$hostname" "${VM_BOOTLOADER:-limine}" << 'PY'
+python3 - "$www/settings.json" "$VM_USER" "$password" "$timezone" "$hostname" "${VM_BOOTLOADER:-limine}" "${VM_DESKTOP:-kde}" << 'PY'
 import json, sys
-out, user, pw, tz, host, bootloader = sys.argv[1:]
+out, user, pw, tz, host, bootloader, desktop = sys.argv[1:]
 json.dump({
     "install_type": "simple", "headless_mode": True,
     "device": "/dev/vda", "fs_name": "btrfs", "subvolumes": "default",
@@ -148,7 +148,7 @@ json.dump({
     ],
     "hostname": host, "locale": "en_US.UTF-8", "xkbmap": "us", "timezone": tz,
     "user_name": user, "user_pass": pw, "user_shell": "/bin/fish", "root_pass": pw,
-    "kernel": "linux-cachyos linux-cachyos-lts", "desktop": "kde", "bootloader": bootloader,
+    "kernel": "linux-cachyos linux-cachyos-lts", "desktop": desktop, "bootloader": bootloader,
 }, open(out, "w"), indent=2)
 PY
 python3 "$here/vminstall-server.py" "$www" "$port" &
@@ -208,6 +208,9 @@ if [[ -f /etc/sddm.conf.d/10-gamescope-autologin.conf ]]; then
     # Steamify's gaming mode (gamescope, no Plasma, and it doesn't render in the VM): the login manager has to be up.
     for _ in $(seq 60); do systemctl is-active --quiet display-manager && break; sleep 3; done
     systemctl is-active --quiet display-manager || { echo "The login manager didn't start." >&2; exit 1; }
+elif pacman -Q gdm >/dev/null 2>&1; then
+    for _ in $(seq 60); do pgrep -u "$USER" -x gnome-shell >/dev/null && break; sleep 3; done
+    pgrep -u "$USER" -x gnome-shell >/dev/null || { echo "GNOME didn't start." >&2; exit 1; }
 else
     for _ in $(seq 60); do pgrep -u "$USER" -x plasmashell >/dev/null && break; sleep 3; done
     pgrep -u "$USER" -x plasmashell >/dev/null || { echo "Plasma didn't start." >&2; exit 1; }
