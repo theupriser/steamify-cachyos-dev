@@ -53,3 +53,11 @@ plus pacman hook, relogin by restarting gdm).
 - The relogin helper waits on /run/user/<uid>, not `loginctl show-user` (which lingers ~10 s).
 - NOT done: the `launcher` option (Steamify shortcut/app in the launcher and Steamify Terminal): only `gaming` was applied in the VM, so no Steamify app is installed. On GNOME it still needs: Konsole -> GNOME terminal (Ptyxis/Console) for Steamify Terminal; it downloads the newest GitHub release (without GNOME support until released).
 - Not done either: `silent` (Steam starts on the desktop), the other options (notify, glyphs, ...), boot option, turn-off, KDE regression.
+
+## KDE and GNOME installed together (open, user asked 2026-10-14)
+Gamescope is its own session and doesn't depend on either desktop. What does:
+- `choose_login_manager` (lib/desktop.sh) uses the RUNNING desktop: from KDE it would switch a GDM system to plasma-login-manager/SDDM, from GNOME to GDM. With both installed it should keep the login manager that is active (`current_display_manager`), switching only when none of ours is.
+- Which desktop "Switch to Desktop" / "Boot into the desktop" go to: now fixed when the conversion is applied (DESKTOP_SESSION in the GDM tools, plasma.desktop in CachyOS's own). Needs a "preferred desktop" state (menu choice), maybe the last used one.
+- Both themes are offered (desktop_installed) and independent (kdeglobals vs gsettings), but ~/.config/gtk-4.0/gtk.css is shared: the GNOME theme's colors reach GTK4 apps under KDE too (consider only applying under GNOME, e.g. `@media`-less: write it from a GNOME-only login hook, or leave it to the user).
+- Single user mode (SDDM + KDE) with GNOME also installed: untested.
+- Test: install plasma-desktop on the GNOME VM (or GNOME on the KDE VM), run the conversion from each, switch both ways.
