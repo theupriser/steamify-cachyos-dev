@@ -61,3 +61,7 @@ Gamescope is its own session and doesn't depend on either desktop. What does:
 - Both themes are offered (desktop_installed) and independent (kdeglobals vs gsettings), but ~/.config/gtk-4.0/gtk.css is shared: the GNOME theme's colors reach GTK4 apps under KDE too (consider only applying under GNOME, e.g. `@media`-less: write it from a GNOME-only login hook, or leave it to the user).
 - Single user mode (SDDM + KDE) with GNOME also installed: untested.
 - Test: install plasma-desktop on the GNOME VM (or GNOME on the KDE VM), run the conversion from each, switch both ways.
+
+## Open: Steamify app icon in GNOME's dock (2026-10-14)
+The running Steamify (Qt) window shows a blank grey icon in the dock. Facts: the window's app_id is `steamify-ui` (WAYLAND_DEBUG), GLib accepts `steamify-ui.desktop` (icon `steamify`, StartupWMClass `steamify-ui`), icon as SVG, as PNG and as absolute path all stay blank, StartupWMClass is in. A plain GTK test window with app id `steamify-ui`, and with a second launcher `probeapp.desktop` (also system-wide), gets GNOME's generic blue icon, also with the Ubuntu Dock extension off (stock dash): so GNOME Shell doesn't match these windows to their launchers here (system apps match). Not the icon file, not the dock. Ideas: launch through the desktop/DING click and gnome-shell's own launch (startup sequence) instead of systemd-run; check gnome-shell logs; try on real hardware; check Qt's app_id handling (xdg-toplevel-icon).
+The tray icon is fine (single-color steamify-symbolic.svg), the notification too.
