@@ -6,7 +6,11 @@ pass() { echo "PASS $*"; }; fail() { echo "FAIL $*"; }; skip() { echo "SKIP $*";
 sudo mountpoint -q /mnt || sudo mount -t 9p -o trans=virtio,version=9p2000.L repo /mnt
 cd /mnt || exit 1
 export SCRIPT_DIR=/mnt   # steamify.sh sets it; the libs alone read patches/ and services/ from it
-for lib in common state packages login-manager single-user steam-desktop steam-machine fremont-poweroff vram-booster hdmi-refresh nvidia gamescope-nvidia controllers cec boot-session vapor-theme steamos-extras bios desktop-shortcut wizard-shortcut steam-game update-notifier; do
+# ssh has no desktop session variables: Steamify's desktop detection (lib/desktop.sh) reads the running one.
+if [[ -z "${XDG_CURRENT_DESKTOP:-}" ]]; then
+    if pgrep -u "$USER" -x gnome-shell >/dev/null; then export XDG_CURRENT_DESKTOP=GNOME; elif pgrep -u "$USER" -x plasmashell >/dev/null; then export XDG_CURRENT_DESKTOP=KDE; fi
+fi
+for lib in common state desktop packages login-manager single-user steam-desktop steam-machine fremont-poweroff vram-booster hdmi-refresh nvidia gamescope-nvidia controllers cec boot-session vapor-theme gnome-theme steamos-extras bios desktop-shortcut wizard-shortcut steam-game update-notifier; do
     # shellcheck source=/dev/null
     . "lib/$lib.sh" 2>/dev/null
 done
@@ -15,7 +19,7 @@ sf() { bash /mnt/steamify.sh "$@" < /dev/null 2>&1 | sed 's/\x1b\[[0-9;]*m//g'; 
 is()   { "${1}_status" 2>/dev/null; }
 expect_on()  { local i; for i in "$@"; do is "$i" && pass "$i is on" || fail "$i is off"; done; }
 expect_off() { local i; for i in "$@"; do is "$i" && fail "$i is on" || pass "$i is off"; done; }
-ticks() { local i; for i in gaming nvidia bigpicture theme glyphs single launcher notify vram cec machine poweroff boot; do is "$i" && printf '%s ' "$i"; done; echo; }
+ticks() { local i; for i in gaming nvidia bigpicture theme gnometheme glyphs single launcher notify vram cec machine poweroff boot; do is "$i" && printf '%s ' "$i"; done; echo; }
 # fake_nvidia: an NVIDIA PC for the nvidia suite. A fake RTX 5080 in a fake DRM tree (NVIDIA_DRM_DIR is Steamify's test hook, exported
 # here: call it in every guest command that runs the wizard) and fake NVIDIA modules for every installed kernel (renamed copies of a
 # tiny module, then depmod), so `modinfo nvidia_drm` finds one and the initramfs build has modules to put in.

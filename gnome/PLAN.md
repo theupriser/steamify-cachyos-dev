@@ -1,5 +1,8 @@
 # Steamify on GNOME (GDM): prototype plan
 
+## Test status 2026-10-15
+Automated suite `gnome` (`scripts/vmsuite.sh gnome`, TESTPLAN F-GNOME, GN1-GN7): all pass, including session switching with the stand-in session, reboot persistence, boot into desktop, KDE+GNOME together. KDE regression (6 suites) passes on the branch. Open item (6) of the list below (GNOME regression run) is done; the rest stands.
+
 ## RESUME HERE (written 2026-10-14, end of the first session)
 State: product branch `feature/gnome-prototype` in steamify-cachyos (pushed, not merged; main is the 2.12.0 release), the theme repo
 `github.com/theupriser/steamify-gnome-theme` (main). Everything is committed; the VM image is NOT in git (it lived in ~/vms/gnome-vm on one laptop).
@@ -51,9 +54,9 @@ plus pacman hook, relogin by restarting gdm).
 3. [x] Check: custom.conf, AccountsService, hook, sudoers, our tools in place.
 4. [x] (gamescope itself dies in the VM: Vulkan/DRM scanout errors, also without GNOME; GDM did start it) Reboot: GDM autologs into the gamescope session (loginctl session desktop/type; gamescope may not render in the VM, a running session is enough).
 5. [~] (gamescope->GNOME and GNOME->gamescope verified with a stand-in gamescope session (Exec=sleep infinity in /usr/share/wayland-sessions/gamescope-session.desktop, original kept as .real); reboot persistence, `boot` option and the shortcut click not yet) `steamos-session-select desktop` -> GNOME session; Return to Gaming Mode shortcut -> gamescope again; reboot persistence; `boot` option.
-6. [ ] Turn off: everything restored (custom.conf backup, original tools).
-7. [ ] KDE regression: existing suites still pass on the KDE VM.
-8. [ ] Commit dev-repo changes (VM_DESKTOP) to main; product branch stays a prototype, no release without the user.
+6. [x] (suite gnome GN3, 2026-10-15) Turn off: everything restored (custom.conf backup, original tools).
+7. [x] (2026-10-15, laptop: cli, menu, hw, installer, toggles, nvidia, 0 fail) KDE regression: existing suites still pass on the KDE VM.
+8. [x] (with the gnome suite, 2026-10-15) Commit dev-repo changes (VM_DESKTOP) to main; product branch stays a prototype, no release without the user.
 
 ## Later (solid version)
 - Tests: GNOME suite in the dev repo, TESTPLAN rows; ISO with a GNOME variant.

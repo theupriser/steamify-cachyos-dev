@@ -6,6 +6,9 @@ of the history.
 
 ## Unreleased
 
+- **feat: suite `gnome`** (`share/vmtest/gnome/`, GN1-GN7) on the GNOME + GDM VM (`vmsuite.sh gnome`, base image from `~/vms/gnome-vm`, port 2307); `vmsuite.sh` starts GDM/GNOME instead of Plasma for it; `prelude.sh` reads the running desktop and loads the GNOME libs; `vmtest.sh` runs it by default. New KDE block `cli/70-k1-kde-unchanged.sh`
+- **chore: removed `share/vmtest/backend` and `share/golden/`** (safety nets of the scrapped Go refactor)
+
 - **feat: `share/golden/`: a no-VM sandbox (bubblewrap, fake `/etc` `/sys` `$HOME`, shim `pacman` `systemctl` `sudo` `uname` `modinfo`) and golden `--backend status` and apply `plan` output of the bash 2.11.1 backend for an AMD PC, an NVIDIA PC and a Steam Machine; `record.sh` records, `record.sh check` compares (the Go refactor's safety net)**
 
 ## 0.5.0 - 2026-10-02

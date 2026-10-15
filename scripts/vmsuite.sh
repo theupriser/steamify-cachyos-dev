@@ -2,7 +2,8 @@
 # One suite of the automated test (TESTPLAN.md rows that need no person) on the plain CachyOS VM
 # (Plasma, no Steamify: ~/vms/steamify-vm, from vminstall.sh --iso <CachyOS ISO> with VM_STEAMIFY=skip).
 #   scripts/vmsuite.sh <suite> [--window]     suites: the folders in share/vmtest/ (cli, ...)
-#   scripts/vmsuite.sh --prepare              only make the base image (below)
+#   scripts/vmsuite.sh --prepare [gnome]      only make the base image (below)
+# The suite "gnome" runs on the plain CachyOS + GNOME + GDM VM (~/vms/gnome-vm, from vminstall.sh with VM_DESKTOP=gnome) instead.
 # Every block share/vmtest/<suite>/NN-name.sh starts from a fresh copy of the VM's `ssh-ready` state,
 # runs in the guest as the VM user (repo on /mnt; NN-name.host.sh blocks run on the host instead: reboots,
 # host scripts), and prints PASS/FAIL/SKIP lines; the first comment lines say which TESTPLAN rows it
@@ -15,7 +16,8 @@
 set -uo pipefail
 here="$(cd "$(dirname "$0")" && pwd)"
 repo="$(cd "$here/.." && pwd)"
-src="${SRC:-$HOME/vms/steamify-vm}"
+desk=kde; [[ "${1:-}" == gnome* || "${2:-}" == gnome* ]] && desk=gnome
+src="${SRC:-$HOME/vms/steamify-vm}"; [[ $desk == gnome ]] && src="${SRC:-$HOME/vms/gnome-vm}"
 base="$src/base-ssh-ready.qcow2"
 
 prepare_base() {   # once, under a lock (parallel suites): the ssh-ready snapshot as a stand-alone image
@@ -32,7 +34,7 @@ suite="${1:?usage: $0 <suite> [--window] | --prepare}"
 [[ "${2:-}" == --window ]] || export VM_HEADLESS=1
 dir="$repo/share/vmtest/$suite"
 [[ -d "$dir" ]] || { echo "No suite $suite (folders in share/vmtest/)" >&2; exit 2; }
-case "$suite" in cli) port=2301 ;; menu) port=2302 ;; hw) port=2303 ;; installer) port=2304 ;; toggles) port=2305 ;; nvidia) port=2306 ;; *) port=2390 ;; esac
+case "$suite" in gnome*) port=2307 ;; cli) port=2301 ;; menu) port=2302 ;; hw) port=2303 ;; installer) port=2304 ;; toggles) port=2305 ;; nvidia) port=2306 ;; *) port=2390 ;; esac
 export VM_PORT="${VM_PORT:-$port}"
 export VM_DIR="$HOME/vms/run-$suite"
 export REPO="${REPO:-$repo/../steamify-cachyos}"
@@ -59,16 +61,23 @@ vm_fresh() {   # vm_fresh [VAR=value...]: extra environment for the VM start (BI
     cp "$repo/run.sh" "$VM_DIR/run.sh"; cp "$src/vars.ssh-ready.fd" "$VM_DIR/vars.fd"
     rm -f "$VM_DIR/disk.qcow2" "$VM_DIR/known_hosts"
     qemu-img create -q -f qcow2 -b "$base" -F qcow2 "$VM_DIR/disk.qcow2" || return 1
-    (cd "$VM_DIR" && env "$@" nohup ./run.sh --fremont > vm.log 2>&1 &)
+    local fremont=--fremont; [[ $desk == gnome ]] && fremont=   # GNOME: a plain PC
+    (cd "$VM_DIR" && env "$@" nohup ./run.sh $fremont > vm.log 2>&1 &)
     local _; for _ in $(seq 100); do vm_ssh -o ConnectTimeout=3 true 2>/dev/null && break; sleep 3; done
-    vm_ssh -o LogLevel=ERROR bash -s <<'REMOTE'
+    vm_ssh -o LogLevel=ERROR "DESK=$desk bash -s" <<'REMOTE'
 sudo mount -t 9p -o trans=virtio,version=9p2000.L repo /mnt
+if [[ $DESK == kde ]]; then
 sudo mkdir -p /etc/plasmalogin.conf.d
 printf '[Autologin]\nUser=%s\nSession=plasma.desktop\n' "$USER" | sudo tee /etc/plasmalogin.conf.d/00-test-autologin.conf >/dev/null
 for _ in $(seq 10); do pgrep -u "$USER" -x plasmashell >/dev/null && break; sleep 3; done
 pgrep -u "$USER" -x plasmashell >/dev/null || { sudo systemctl reset-failed plasmalogin; sudo systemctl restart plasmalogin; }
 for _ in $(seq 40); do pgrep -u "$USER" -x plasmashell >/dev/null && break; sleep 3; done
 pkill -u "$USER" systemsettings; pkill -u "$USER" cachyos-hello
+else
+    # GNOME: the VM's GDM autologs in (vminstall.sh); wait for the shell.
+    for _ in $(seq 60); do pgrep -u "$USER" -x gnome-shell >/dev/null && break; sleep 3; done
+    pgrep -u "$USER" -x gnome-shell >/dev/null || { sudo systemctl restart gdm; for _ in $(seq 40); do pgrep -u "$USER" -x gnome-shell >/dev/null && break; sleep 3; done; }
+fi
 for f in /etc/pacman.d/*mirrorlist*; do sudo sed -i '/krfoss/s/^Server/#Server/' "$f"; done
 # the host's package cache over pacman's
 sudo mkdir -p /var/cache/steamify-pkg
@@ -77,7 +86,11 @@ if sudo mount -t 9p -o trans=virtio,version=9p2000.L cache /var/cache/steamify-p
     # Steamify's own downloads (the CEC driver: GitHub rate-limits it) once for every VM
     sudo mkdir -p /var/cache/steamify-pkg/steamify /var/cache/steamify; sudo mount --bind /var/cache/steamify-pkg/steamify /var/cache/steamify
 fi
-pgrep -u "$USER" -x plasmashell >/dev/null && echo "Logged in to Plasma." || { echo "Plasma did not start." >&2; exit 1; }
+if [[ $DESK == kde ]]; then
+    pgrep -u "$USER" -x plasmashell >/dev/null && echo "Logged in to Plasma." || { echo "Plasma did not start." >&2; exit 1; }
+else
+    pgrep -u "$USER" -x gnome-shell >/dev/null && echo "Logged in to GNOME." || { echo "GNOME did not start." >&2; exit 1; }
+fi
 REMOTE
 }
 

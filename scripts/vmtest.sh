@@ -6,7 +6,7 @@
 #   boot          the boot loader test (limine, systemd-boot, grub), or name loaders
 #   generic       the plain-PC install check for every loader (vmbootloadertest.sh --quick --generic: a PC that is not a
 #                 Steam Machine must get no Steam Machine items and no DKMS modules); part of the default run
-#   <suite>       cli, menu, hw, installer, toggles, nvidia (folders in share/vmtest/)
+#   <suite>       cli, menu, hw, installer, toggles, nvidia, gnome (folders in share/vmtest/)
 #   --install     install the boot loader VMs first from the newest Steamify ISO (asks before replacing a disk)
 #   --window      show the VMs' windows (default: headless; one shared Konsole follows ~/vms/test.log)
 #   MAX_PARALLEL=3 (env) VMs at once (5 worked on a 9800X3D / 64 GB); the slowest suites start first
@@ -42,7 +42,7 @@ if $screen; then
 fi
 if [[ ${#loaders[@]} -eq 0 && ${#suites[@]} -eq 0 ]] && ! $want_boot && ! $want_generic; then
     want_boot=true; want_generic=true
-    for d in cli menu hw installer toggles nvidia; do [[ -d "$repo/share/vmtest/$d" ]] && suites+=("$d"); done
+    for d in cli menu hw installer toggles nvidia gnome; do [[ -d "$repo/share/vmtest/$d" ]] && suites+=("$d"); done
 fi
 # What the ISO advertises: the boot loaders calamares-online.sh keeps.
 advertised="$(sed -n 's/.*"bootloader:\([^"]*\)".*/\1/p' "$iso_repo/archiso/airootfs/usr/local/bin/calamares-online.sh" 2>/dev/null | head -n 1)"
@@ -55,8 +55,8 @@ summary="$HOME/vms/last-test.txt"
 maxp="${MAX_PARALLEL:-3}"   # VMs at once (4 GB RAM each in the suites, see vmsuite.sh); 5 ran fine on a 9800X3D with 64 GB
 # Jobs, the slowest first so the last ones are short: suites, then the boot loaders.
 jobs_list=()
-for s in toggles hw cli menu installer; do [[ " ${suites[*]} " == *" $s "* ]] && jobs_list+=("suite:$s"); done
-for s in "${suites[@]}"; do [[ " toggles hw cli menu installer " == *" $s "* ]] || jobs_list+=("suite:$s"); done
+for s in gnome toggles hw cli menu installer; do [[ " ${suites[*]} " == *" $s "* ]] && jobs_list+=("suite:$s"); done
+for s in "${suites[@]}"; do [[ " gnome toggles hw cli menu installer " == *" $s "* ]] || jobs_list+=("suite:$s"); done
 for l in "${loaders[@]}"; do jobs_list+=("loader:$l"); done
 for l in "${gloaders[@]}"; do jobs_list+=("generic:$l"); done
 jobtag() { [[ "${1%%:*}" == generic ]] && echo "${1#*:}-generic" || echo "${1#*:}"; }   # files and names of a job
