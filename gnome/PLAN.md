@@ -3,6 +3,59 @@
 ## Test status 2026-10-15
 Automated suite `gnome` (`scripts/vmsuite.sh gnome`, TESTPLAN F-GNOME, GN1-GN7): all pass, including session switching with the stand-in session, reboot persistence, boot into desktop, KDE+GNOME together. KDE regression (6 suites) passes on the branch. Open item (6) of the list below (GNOME regression run) is done; the rest stands.
 
+## 2.13.0 release branch on the RTX 5080 PC (hardware session 2026-10-15 evening): results and what to test in the VM next
+Setup: `release/2.13.0` (steamify-cachyos PRs #85-#93 merged) on a fresh CachyOS + GNOME install, 3440x1440 monitor. The test copy lives in
+`~/steamify-cachyos` and the app was started **as a user unit inside the GNOME session** (`systemd-run --user --unit=... python3 ./steamify-ui
+--windowed` with `XDG_RUNTIME_DIR` and `DBUS_SESSION_BUS_ADDRESS` set), NOT from a plain ssh command: that has no `XDG_CURRENT_DESKTOP`
+(so no own window frame on GNOME: no minimize/close buttons) and no polkit session (`systemctl reboot` fails silently). The remote login
+shell is fish (send scripts to `bash -s`). GNOME blocks screenshots from outside the session (`org.gnome.Shell.Screenshot` is not
+allowed), only the portal works.
+
+Confirmed on the hardware:
+- The conversion + GNOME theme apply runs end to end. The NVIDIA gaming mode setup had failed on a working gamescope: the smoke test
+  `timeout gamescope ... | grep -q` under `pipefail` (fixed, #84; check it stays fixed in the nvidia suite).
+- The prebuilt GNOME Settings (release `settings` of steamify-gnome-theme, built by CI in an Arch container in ~3 min) downloads, passes its
+  checksum and installs; the "GNOME Desktop" panel is there. Turning the theme off puts the stock `gnome-control-center` back.
+- Restart GNOME (countdown at the end of a theme-only run, then `steamify-gdm-relogin <session>`): the relogin itself takes ~1 s; it first
+  landed in gaming mode (the account's session after the conversion), now it logs into the session the app runs in and puts the account's
+  session back afterwards (checked: Session=gamescope-session again). A run that also needs a reboot shows Restart now instead.
+- App: desktop scale 1.0 (it was 2.0 on 3440x1440), a row click only selects, the switch itself toggles, the logo needs `qt6-svg` (pyside6
+  doesn't pull it in), the dock icon needs a **PNG by name** in the user icon theme: an SVG, by path or by name, is blank in the dock on a
+  fresh install (GNOME Shell: "Could not load a pixbuf from icon theme"; GTK: "Unrecognized image file format" for the same SVG).
+- GNOME theme: dock at the bottom, desktop icons from the top right (Return to Gaming Mode, Steam, Steamify CachyOS), Desktop Icons NG and
+  AppIndicator are installed by Steamify (they were not on the fresh install) and removed again when neither the conversion nor the theme is on.
+
+Open, to build in the VM (rows GN8-GN13 in TESTPLAN F-GNOME):
+1. **Roughed-up GNOME after several theme off/on cycles with relogins (NOT diagnosed).** After off/on/off cycles the user reported: no icons in the
+   top bar and the overview search not working. What was checked and was fine: the shell ran with both extensions ACTIVE, no failed user units,
+   all gsd units running, the user manager's environment complete (`XDG_CURRENT_DESKTOP=GNOME`, `WAYLAND_DISPLAY`), shell log with only benign
+   messages (`CalendarServer` activation failed, parental controls, `XDG_SESSION_ID` unset, `gsd-power` backlight), icons (Adwaita symbolic,
+   firefox) decode in a test session. Not yet looked at: the dash favorites and `gio list-apps`, the menu data, `~/.local/share/icons/hicolor`
+   (Steamify writes a PNG there; the directory has an `icon-theme.cache` from `gtk-update-icon-cache -t` but no `index.theme`: a suspect),
+   the icon theme caches, theme leftovers in gsettings (gtk-theme stayed `adw-gtk3-dark`), screenshots. Reproduce: apply theme, off, on, off, with a
+   relogin after each, and take portal screenshots of the top bar and the search each time.
+2. **Relogin**: a theme-only run ends in the countdown, Cancel keeps the button, the relogin lands in GNOME and AccountsService `Session` is back to
+   what it was (stand-in gamescope session in the VM); without the helper (no conversion) it is a plain logout.
+3. **Extension ownership**: `$STATE_DIR/gnomeextras.list` is written before the install and only for missing packages; both off removes exactly those
+   and takes the two extensions out of `enabled-extensions`; theme off with the conversion on keeps them enabled; a package the user installed
+   first stays. (Unit-tested with stubs only.)
+4. **App on GNOME in a real session**: own window frame and buttons (minimize, maximize, close click-tested), Restart now, the scale at 100% and
+   at a GNOME scale of 150%, TV mode unchanged (`--fullscreen`), one-click switch and select-only row, the logo (qt6-svg) and the dock icon
+   after applying the **launcher** option (PNG by name in `hicolor/256x256/apps`, entry `io.github.theupriser.Steamify.desktop`).
+5. **Settings package failure paths**: offline (stock Settings stays, a warning), wrong checksum, a pacman conflict; the weekly rebuild keeps
+   matching Arch (the package links against current libraries).
+6. **Desktop icons**: Steamify's three launchers placed from the top right in name order, the user's own files keep their positions, theme off
+   puts `start-corner` back; Home and mounted drives still show.
+
+Multi-OS Limine (real hardware only; the VM has one OS): on the user's PC (main CachyOS on nvme0n1p2, the GNOME test install on nvme0n1p3,
+Windows on its own ESP) every reinstall of the GNOME test OS made the main CachyOS entry disappear from Limine (both installs share the ESP and the
+generated `limine.conf` only knows its own machine id). Repaired by hand twice, same recipe: back up `limine.conf` and `/etc/default/limine`,
+set `TARGET_OS_NAME` to the new install's name, `limine-update`, insert a `/+CachyOS` block pointing at the other install's
+`boot():/<its machine id>/linux-cachyos{,-lts}/{vmlinuz,initramfs}` with its own root UUID and cmdline (no hashes), drop the stale block the
+regenerate leaves, move the generated block before the Windows entry, `limine-snapper-sync`. Order wanted: CachyOS, CachyOS GNOME, Windows Boot
+Manager. Open: Secure Boot (sbctl keys, signing, `limine enroll-config`) is NOT set up: the hand-written entry has no hashes and would not boot
+with it on; the ESP was 84% full (three machine-id folders of ~1.2 GB; one is from a removed install and unused).
+
 ## Real hardware: the RTX 5080 PC with GNOME + CachyOS (checklist, written 2026-10-15)
 The VM can't render gamescope, so these are still open. Also read `nvidia/` (the NVIDIA gamescope path doesn't exist in the VM: how it behaves under GDM is untested).
 Setup: `steamify-cachyos` on `feature/gnome-prototype` and this repo checked out; run from the checkout (`bash steamify.sh`; the released app doesn't know GNOME: `python3 ui/steamify-ui` with `XDG_CURRENT_DESKTOP=GNOME`). Passwordless sudo, GDM autologin working, a second way in (ssh from another machine: the ssh session dies at every session switch, reconnect). Back up first: `/etc/gdm/custom.conf`, `/usr/lib/steamos/steam-set-session`, `/usr/bin/steamos-session-select` (turning the conversion off restores them: tested in the VM, suite GN3).
