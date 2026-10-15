@@ -3,6 +3,23 @@
 ## Test status 2026-10-15
 Automated suite `gnome` (`scripts/vmsuite.sh gnome`, TESTPLAN F-GNOME, GN1-GN7): all pass, including session switching with the stand-in session, reboot persistence, boot into desktop, KDE+GNOME together. KDE regression (6 suites) passes on the branch. Open item (6) of the list below (GNOME regression run) is done; the rest stands.
 
+## Real hardware: the RTX 5080 PC with GNOME + CachyOS (checklist, written 2026-10-15)
+The VM can't render gamescope, so these are still open. Also read `nvidia/` (the NVIDIA gamescope path doesn't exist in the VM: how it behaves under GDM is untested).
+Setup: `steamify-cachyos` on `feature/gnome-prototype` and this repo checked out; run from the checkout (`bash steamify.sh`; the released app doesn't know GNOME: `python3 ui/steamify-ui` with `XDG_CURRENT_DESKTOP=GNOME`). Passwordless sudo, GDM autologin working, a second way in (ssh from another machine: the ssh session dies at every session switch, reconnect). Back up first: `/etc/gdm/custom.conf`, `/usr/lib/steamos/steam-set-session`, `/usr/bin/steamos-session-select` (turning the conversion off restores them: tested in the VM, suite GN3).
+
+1. [ ] Menu: GNOME theme offered, Plasma theme and single user mode hidden (`bash steamify.sh`, read the ticks with `q`).
+2. [ ] Apply: `bash steamify.sh --defaults --options gaming,launcher --boot gamescope`. No errors; check `/etc/gdm/custom.conf`, `/var/lib/AccountsService/users/$USER` (Session/XSession), our tools in place, hook, sudoers (as GN2).
+3. [ ] Cold boot: GDM logs straight into gamescope; the picture, the controller, Steam in Big Picture. Note the time to the first frame.
+4. [ ] Steam's own Switch to Desktop (power menu): lands on GNOME. Time the GDM restart (VM: ~10 s waiting for the user manager) and note what the screen shows meanwhile (black? login screen flash?).
+5. [ ] Return to Gaming Mode (desktop icon and launcher entry): back in gamescope. Repeat 3 times; look for a login screen or a dead session.
+6. [ ] `--boot desktop`, reboot: GNOME straight away; `--boot gamescope`, reboot: gamescope.
+7. [ ] Failure case: break gamescope on purpose (rename its session file), reboot: where does GDM land (VM: the login screen)? Restore it.
+8. [ ] GNOME theme (`--options gnometheme`): dock, wallpaper, dark style, extensions on the real GPU; turn off and check it is restored.
+9. [ ] The app: dock icon after a clean login (open item 1), minimize/maximize in its own frame (open item 2), the update notifier tray icon.
+10. [ ] Turn everything off: custom.conf and the two CachyOS tools back as they were, reboot into plain GNOME.
+11. [ ] With NVIDIA: does the patched gamescope (`lib/gamescope-nvidia.sh`) come in with the conversion under GDM, and does the session start after a GDM restart (NVIDIA + GDM Wayland can differ from the VM)?
+Record results in the Results log below as a dated line; add a row to TESTPLAN.md H-Real if it becomes a standing check.
+
 ## RESUME HERE (written 2026-10-14, end of the first session)
 State: product branch `feature/gnome-prototype` in steamify-cachyos (pushed, not merged; main is the 2.12.0 release), the theme repo
 `github.com/theupriser/steamify-gnome-theme` (main). Everything is committed; the VM image is NOT in git (it lived in ~/vms/gnome-vm on one laptop).
