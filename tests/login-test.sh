@@ -20,6 +20,7 @@ source lib/common.sh; source lib/state.sh; source lib/desktop.sh
 for lib in login-manager single-user wizard-shortcut desktop-shortcut boot-session; do source <(mapped "lib/$lib.sh"); done
 info() { :; }; ok() { :; }; warn() { :; }; err() { echo "ERR $*"; }
 sudo() { "$@"; }
+set -uo pipefail   # as steamify.sh runs: a function whose last command is a failed "&&" must not hide behind a pipe
 TARGET_USER=tester; USER=tester
 
 # --- stubs: systemd, desktop, hardware
@@ -70,14 +71,16 @@ unset -f configure_autologin switch_to_plasmalogin remove_legacy_login_setup rem
 source <(mapped lib/login-manager.sh); source <(mapped lib/desktop-shortcut.sh)   # the real ones again, after the call-recording stubs
 switch_to_plasmalogin() { :; }
 LM=plasmalogin
-rm -rf "$CONF"; WANTED=([single]=1); configure_autologin
+rm -rf "$CONF"; WANTED=([single]=1); configure_autologin; rc=$?
+check "single user: configure_autologin succeeds (the shell runs with pipefail)" '[[ $rc == 0 ]]'
 check "single user: autologin fragment for the user, into gamescope, with Relogin" \
     'grep -qx "User=tester" "$CONF/10-gamescope-autologin.conf" && grep -qx "Session=gamescope-session.desktop" "$CONF/10-gamescope-autologin.conf" && grep -qx "Relogin=true" "$CONF/10-gamescope-autologin.conf"'
 check "single user: steam-set-session started it in gamescope, no relogin helper, no greeter session" \
     'grep -qx "Session=gamescope-session.desktop" "$CONF/zz-steamos-autologin.conf" && [[ ! -e "$T/etc/systemd/system/steamify-relogin.path" && ! -e "$T/usr/local/libexec/steamify-greeter-session" ]] && ! grep -q "steamify-greeter-session" "$DROPIN"'
 check "both modes: the one drop-in creates the one-shot files for plasma-login-manager and empties the relogin file" \
     'grep -q "zzt-holo-temp-login.conf" "$DROPIN" && grep -q "zzt-steamos-temp-login.conf" "$DROPIN" && grep -q "zzt-steamify-relogin.conf" "$DROPIN" && [[ "$(ls "$T/etc/systemd/system/plasmalogin.service.d")" == "zz-steamify.conf" ]]'
-rm -rf "$CONF"; WANTED=([single]=0); configure_autologin
+rm -rf "$CONF"; WANTED=([single]=0); configure_autologin; rc=$?
+check "multi-user: configure_autologin succeeds (the shell runs with pipefail)" '[[ $rc == 0 ]]'
 check "multi-user: no autologin fragment (the login screen at start)" '[[ ! -e "$CONF/10-gamescope-autologin.conf" ]]'
 check "multi-user: relogin helper (script, path unit, service) installed and enabled" \
     '[[ -x "$T/usr/local/libexec/steamify-relogin" && -f "$T/etc/systemd/system/steamify-relogin.path" && -f "$T/etc/systemd/system/steamify-relogin.service" ]] && grep -q "enable --now steamify-relogin.path" "$SYSTEMCTL_LOG"'
