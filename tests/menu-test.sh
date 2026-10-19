@@ -38,6 +38,7 @@ launcher_repair() { return 1; }
 bios_lookup_newest() { :; }
 kernel_overview() { :; }
 os_version_refresh() { :; }
+refresh_desktop_shortcut() { :; }   # would write to the real Desktop folder
 for c in "${COMPONENTS[@]}"; do
     eval "${c}_status() { [[ \" \$ON \" == *\" $c \"* ]]; }"
 done

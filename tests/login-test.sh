@@ -35,6 +35,7 @@ systemctl() {
 user_session() { return 1; }
 desktop_kind() { echo kde; }
 desktop_installed() { [[ "$1" == kde ]]; }
+choose_login_manager() { echo "$LM"; }   # lib/desktop.sh
 is_wanted() { [[ "${WANTED[$1]:-0}" == 1 ]]; }   # lib/menu.sh
 backup_file() { :; }
 # steam-set-session as CachyOS ships it for plasma-login-manager: the session goes into one conf.d file.
@@ -55,12 +56,12 @@ for f in install_required_packages remove_legacy_login_setup remove_autologin_co
     eval "$f() { CALLS+=\" $f\"; return 0; }"
 done
 GSN_RC=0; gsn_enable() { CALLS+=" gsn_enable"; return $GSN_RC; }
-LOGIN_MANAGER=plasmalogin; CALLS=""; gaming_enable
+LM=plasmalogin; CALLS=""; gaming_enable
 check "gaming_enable (plasma-login-manager): packages and the patched gamescope first, then the login setup, then the shortcut and Steam" \
     '[[ "$CALLS" == " install_required_packages gsn_enable switch_to_plasmalogin remove_legacy_login_setup configure_autologin single_login_release create_desktop_shortcut steam_enable os_name_enable" ]]'
 GSN_RC=1; CALLS=""; gaming_enable; rc=$?
 check "gaming_enable: a failing gsn_enable (NVIDIA's patched gamescope) stops it before any login change" '[[ $rc != 0 && "$CALLS" == " install_required_packages gsn_enable" ]]'
-GSN_RC=0; LOGIN_MANAGER=gdm; CALLS=""; gaming_enable
+GSN_RC=0; LM=gdm; CALLS=""; gaming_enable
 check "gaming_enable (GDM): GDM autologin and the GNOME session tools, never plasma-login-manager" \
     '[[ "$CALLS" == *" switch_to_gdm configure_gdm_autologin session_tools_install single_login_release "* && "$CALLS" != *switch_to_plasmalogin* ]]'
 
@@ -68,7 +69,7 @@ check "gaming_enable (GDM): GDM autologin and the GNOME session tools, never pla
 unset -f configure_autologin switch_to_plasmalogin remove_legacy_login_setup remove_autologin_conf
 source <(mapped lib/login-manager.sh); source <(mapped lib/desktop-shortcut.sh)   # the real ones again, after the call-recording stubs
 switch_to_plasmalogin() { :; }
-LOGIN_MANAGER=plasmalogin
+LM=plasmalogin
 rm -rf "$CONF"; WANTED=([single]=1); configure_autologin
 check "single user: autologin fragment for the user, into gamescope, with Relogin" \
     'grep -qx "User=tester" "$CONF/10-gamescope-autologin.conf" && grep -qx "Session=gamescope-session.desktop" "$CONF/10-gamescope-autologin.conf" && grep -qx "Relogin=true" "$CONF/10-gamescope-autologin.conf"'
@@ -149,6 +150,17 @@ BOOT_ENABLED=0; refresh_desktop_shortcut
 check "shortcut: back to \"Return to Gaming Mode\"" '[[ -e "$HOME/Desktop/Return to Gaming Mode.desktop" && ! -e "$HOME/Desktop/Switch to Gaming Mode.desktop" ]]'
 remove_desktop_shortcut
 check "shortcut: removed under either name" '[[ -z "$(ls "$HOME/Desktop")" ]]'
+
+# --- after a run: the shortcut is refreshed only when "Boot into" was part of it (the boot module does not reach into the shortcut)
+REFRESHES=""; os_version_refresh() { REFRESHES+=" version"; }; refresh_desktop_shortcut() { REFRESHES+=" shortcut"; }
+source <(awk '/^refresh_after_apply\(\) \{/,/^}/' lib/menu.sh)
+TO_DISABLE=(); TO_ENABLE=(theme); REFRESHES=""; refresh_after_apply
+check "after a run without Boot into: only the version is refreshed" '[[ "$REFRESHES" == " version" ]]'
+TO_ENABLE=(gaming boot); REFRESHES=""; refresh_after_apply
+check "after a run that turns Boot into the desktop on: the shortcut is refreshed too" '[[ "$REFRESHES" == " version shortcut" ]]'
+TO_ENABLE=(); TO_DISABLE=(boot); REFRESHES=""; refresh_after_apply
+check "after a run that turns it off again: the shortcut is refreshed as well" '[[ "$REFRESHES" == " version shortcut" ]]'
+unset -f refresh_desktop_shortcut; source <(mapped lib/desktop-shortcut.sh)
 
 # --- an older layout (SDDM, sync bridge, sudoers rule) leaves nothing behind
 mkdir -p "$T/etc/sddm.conf.d" "$T/etc/systemd/system" "$T/etc/sudoers.d" "$T/usr/local/bin" "$T/etc/systemd/system/plasmalogin.service.d"
