@@ -184,7 +184,7 @@ check "no NVIDIA driver: nothing touched" '[[ "$(cat "$F")" == "LINUX_OPTIONS=\"
 FAKE_DRIVER=1; NVIDIA_DRM_DIR="$T/drm"   # an earlier section ended without the driver
 SW="$T/switches.log"; : > "$SW"; TARGET_USER=tester; SINGLE_AUTOLOGIN="$T/plasmalogin.conf.d/zzz-steamify-autologin.conf"
 switch_to_plasmalogin() { echo plasmalogin >> "$SW"; }
-remove_sddm_autologin() { :; }; remove_base_autologin() { :; }   # would touch the real /etc
+remove_legacy_login_setup() { :; }; remove_base_autologin() { :; }   # would touch the real /etc
 GAMING_ON=0
 check "single user mode is offered on NVIDIA without the conversion..." 'component_available single'
 GAMING_ON=1; check "...and with it" 'component_available single'; GAMING_ON=0

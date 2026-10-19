@@ -35,6 +35,7 @@ systemctl() {
 user_session() { return 1; }
 desktop_kind() { echo kde; }
 desktop_installed() { [[ "$1" == kde ]]; }
+is_wanted() { [[ "${WANTED[$1]:-0}" == 1 ]]; }   # lib/menu.sh
 backup_file() { :; }
 # steam-set-session as CachyOS ships it for plasma-login-manager: the session goes into one conf.d file.
 cat > "$T/usr/lib/steamos/steam-set-session" << EOF
@@ -44,19 +45,19 @@ printf '[Autologin]\nSession=%s\n' "\${1:-gamescope-session.desktop}" > $T/etc/p
 EOF
 chmod +x "$T/usr/lib/steamos/steam-set-session"
 
-CONF="$T/etc/plasmalogin.conf.d"
+CONF="$T/etc/plasmalogin.conf.d"; DROPIN="$T/etc/systemd/system/plasmalogin.service.d/zz-steamify.conf"
 declare -A WANTED
 
 # --- gaming_enable: the order, and what stops it
 CALLS=""
-for f in install_required_packages remove_sddm_autologin remove_session_sync switch_to_plasmalogin switch_to_gdm configure_autologin \
+for f in install_required_packages remove_legacy_login_setup remove_autologin_conf switch_to_plasmalogin switch_to_gdm configure_autologin \
     configure_gdm_autologin session_tools_install single_login_release create_desktop_shortcut steam_enable os_name_enable; do
     eval "$f() { CALLS+=\" $f\"; return 0; }"
 done
 GSN_RC=0; gsn_enable() { CALLS+=" gsn_enable"; return $GSN_RC; }
 LOGIN_MANAGER=plasmalogin; CALLS=""; gaming_enable
 check "gaming_enable (plasma-login-manager): packages and the patched gamescope first, then the login setup, then the shortcut and Steam" \
-    '[[ "$CALLS" == " install_required_packages gsn_enable remove_sddm_autologin remove_session_sync switch_to_plasmalogin remove_sddm_autologin configure_autologin single_login_release create_desktop_shortcut steam_enable os_name_enable" ]]'
+    '[[ "$CALLS" == " install_required_packages gsn_enable switch_to_plasmalogin remove_legacy_login_setup configure_autologin single_login_release create_desktop_shortcut steam_enable os_name_enable" ]]'
 GSN_RC=1; CALLS=""; gaming_enable; rc=$?
 check "gaming_enable: a failing gsn_enable (NVIDIA's patched gamescope) stops it before any login change" '[[ $rc != 0 && "$CALLS" == " install_required_packages gsn_enable" ]]'
 GSN_RC=0; LOGIN_MANAGER=gdm; CALLS=""; gaming_enable
@@ -64,31 +65,31 @@ check "gaming_enable (GDM): GDM autologin and the GNOME session tools, never pla
     '[[ "$CALLS" == *" switch_to_gdm configure_gdm_autologin session_tools_install single_login_release "* && "$CALLS" != *switch_to_plasmalogin* ]]'
 
 # --- the real login setup: single user (autologin) and multi-user (login screen, relogin helper)
-unset -f configure_autologin switch_to_plasmalogin remove_sddm_autologin remove_session_sync
+unset -f configure_autologin switch_to_plasmalogin remove_legacy_login_setup remove_autologin_conf
 source <(mapped lib/login-manager.sh); source <(mapped lib/desktop-shortcut.sh)   # the real ones again, after the call-recording stubs
 switch_to_plasmalogin() { :; }
 LOGIN_MANAGER=plasmalogin
 rm -rf "$CONF"; WANTED=([single]=1); configure_autologin
 check "single user: autologin fragment for the user, into gamescope, with Relogin" \
     'grep -qx "User=tester" "$CONF/10-gamescope-autologin.conf" && grep -qx "Session=gamescope-session.desktop" "$CONF/10-gamescope-autologin.conf" && grep -qx "Relogin=true" "$CONF/10-gamescope-autologin.conf"'
-check "single user: steam-set-session started it in gamescope, no relogin helper, no greeter drop-in" \
-    'grep -qx "Session=gamescope-session.desktop" "$CONF/zz-steamos-autologin.conf" && [[ ! -e "$T/etc/systemd/system/steamify-relogin.path" && ! -e "$T/etc/systemd/system/plasmalogin.service.d/zz-steamify-greeter-session.conf" ]]'
-check "both modes: the drop-in that creates the one-shot files for plasma-login-manager (and empties the relogin file)" \
-    'grep -q "zzt-holo-temp-login.conf" "$T/etc/systemd/system/plasmalogin.service.d/zz-steamify-temp-login.conf" && grep -q "zzt-steamos-temp-login.conf" "$T/etc/systemd/system/plasmalogin.service.d/zz-steamify-temp-login.conf" && grep -q "zzt-steamify-relogin.conf" "$T/etc/systemd/system/plasmalogin.service.d/zz-steamify-temp-login.conf"'
+check "single user: steam-set-session started it in gamescope, no relogin helper, no greeter session" \
+    'grep -qx "Session=gamescope-session.desktop" "$CONF/zz-steamos-autologin.conf" && [[ ! -e "$T/etc/systemd/system/steamify-relogin.path" && ! -e "$T/usr/local/libexec/steamify-greeter-session" ]] && ! grep -q "steamify-greeter-session" "$DROPIN"'
+check "both modes: the one drop-in creates the one-shot files for plasma-login-manager and empties the relogin file" \
+    'grep -q "zzt-holo-temp-login.conf" "$DROPIN" && grep -q "zzt-steamos-temp-login.conf" "$DROPIN" && grep -q "zzt-steamify-relogin.conf" "$DROPIN" && [[ "$(ls "$T/etc/systemd/system/plasmalogin.service.d")" == "zz-steamify.conf" ]]'
 rm -rf "$CONF"; WANTED=([single]=0); configure_autologin
 check "multi-user: no autologin fragment (the login screen at start)" '[[ ! -e "$CONF/10-gamescope-autologin.conf" ]]'
 check "multi-user: relogin helper (script, path unit, service) installed and enabled" \
     '[[ -x "$T/usr/local/libexec/steamify-relogin" && -f "$T/etc/systemd/system/steamify-relogin.path" && -f "$T/etc/systemd/system/steamify-relogin.service" ]] && grep -q "enable --now steamify-relogin.path" "$SYSTEMCTL_LOG"'
 check "multi-user: the relogin path unit watches what a session switch writes" \
     'grep -q "zz-steamos-autologin.conf" "$T/etc/systemd/system/steamify-relogin.path" && grep -q "zzt-holo-temp-login.conf" "$T/etc/systemd/system/steamify-relogin.path" && grep -q "zzt-steamos-temp-login.conf" "$T/etc/systemd/system/steamify-relogin.path"'
-check "multi-user: the login screen preselects the session of Boot into (script and drop-in)" \
-    '[[ -x "$T/usr/local/libexec/steamify-greeter-session" ]] && grep -q "ExecStartPre=-.*steamify-greeter-session" "$T/etc/systemd/system/plasmalogin.service.d/zz-steamify-greeter-session.conf"'
+check "multi-user: the login screen preselects the session of Boot into (script, run before the login manager starts)" \
+    '[[ -x "$T/usr/local/libexec/steamify-greeter-session" ]] && grep -q "ExecStartPre=-.*steamify-greeter-session" "$DROPIN"'
 set_login_mode single
 check "multi-user to single user: autologin back, helper and greeter session removed" \
-    'grep -qx "User=tester" "$CONF/10-gamescope-autologin.conf" && [[ ! -e "$T/etc/systemd/system/steamify-relogin.path" && ! -e "$T/usr/local/libexec/steamify-relogin" && ! -e "$T/etc/systemd/system/plasmalogin.service.d/zz-steamify-greeter-session.conf" ]]'
+    'grep -qx "User=tester" "$CONF/10-gamescope-autologin.conf" && [[ ! -e "$T/etc/systemd/system/steamify-relogin.path" && ! -e "$T/usr/local/libexec/steamify-relogin" && ! -e "$T/usr/local/libexec/steamify-greeter-session" ]] && ! grep -q "steamify-greeter-session" "$DROPIN"'
 set_login_mode multi
 check "single user to multi-user: autologin fragment gone, helper installed again" '[[ ! -e "$CONF/10-gamescope-autologin.conf" && -x "$T/usr/local/libexec/steamify-relogin" ]]'
-remove_relogin_helper; rm -rf "$T/etc/systemd/system/plasmalogin.service.d"; set_login_mode multi
+relogin_helper_remove; rm -rf "$T/etc/systemd/system/plasmalogin.service.d"; set_login_mode multi
 check "without the conversion (no drop-in) set_login_mode changes nothing" '[[ ! -e "$T/etc/systemd/system/steamify-relogin.path" && ! -e "$CONF/10-gamescope-autologin.conf" ]]'
 
 # --- the relogin helper script: writes User=/Relogin for the user on seat0, empties it once the next session is up
@@ -150,21 +151,29 @@ remove_desktop_shortcut
 check "shortcut: removed under either name" '[[ -z "$(ls "$HOME/Desktop")" ]]'
 
 # --- an older layout (SDDM, sync bridge, sudoers rule) leaves nothing behind
-mkdir -p "$T/etc/sddm.conf.d" "$T/etc/systemd/system" "$T/etc/sudoers.d" "$T/usr/local/bin"
+mkdir -p "$T/etc/sddm.conf.d" "$T/etc/systemd/system" "$T/etc/sudoers.d" "$T/usr/local/bin" "$T/etc/systemd/system/plasmalogin.service.d"
+: > "$T/etc/systemd/system/plasmalogin.service.d/zz-steamify-temp-login.conf"; : > "$T/etc/systemd/system/plasmalogin.service.d/zz-steamify-greeter-session.conf"   # the two drop-ins of 2.13.x
 : > "$T/etc/sddm.conf.d/10-gamescope-autologin.conf"; : > "$T/etc/sddm.conf.d/zzz-steamify-autologin.conf"; : > "$T/etc/sddm.conf.d/zz-steamos-autologin.conf"
 : > "$T/etc/systemd/system/sync-steamos-session.path"; : > "$T/etc/systemd/system/sync-steamos-session.service"; : > "$T/usr/local/bin/sync-steamos-session.sh"
 : > "$T/etc/sudoers.d/gamescope-session-switch"
-DM=plasmalogin; remove_sddm_autologin; remove_session_sync; create_desktop_shortcut
+DM=plasmalogin; remove_legacy_login_setup
 check "older layout: SDDM files and their folder are gone (plasma-login-manager is the login manager)" '[[ ! -e "$T/etc/sddm.conf.d" ]]'
 check "older layout: the sync bridge is gone" '[[ ! -e "$T/etc/systemd/system/sync-steamos-session.path" && ! -e "$T/etc/systemd/system/sync-steamos-session.service" && ! -e "$T/usr/local/bin/sync-steamos-session.sh" ]]'
 check "older layout: the shortcut's sudoers rule is gone" '[[ ! -e "$T/etc/sudoers.d/gamescope-session-switch" ]]'
-mkdir -p "$T/etc/sddm.conf.d"; : > "$T/etc/sddm.conf.d/zz-steamos-autologin.conf"; DM=sddm; remove_sddm_autologin
+check "older layout: the two drop-ins of 2.13.x are gone" '[[ -z "$(ls "$T/etc/systemd/system/plasmalogin.service.d")" ]]'
+mkdir -p "$T/etc/sddm.conf.d"; : > "$T/etc/sddm.conf.d/zz-steamos-autologin.conf"; DM=sddm; remove_legacy_login_setup
 check "SDDM still the login manager: steam-set-session's file for it stays (it is in use)" '[[ -e "$T/etc/sddm.conf.d/zz-steamos-autologin.conf" ]]'
+
+# --- an install of 2.13.x (two drop-ins) still counts as the conversion being on
+DM=plasmalogin; mkdir -p "$T/etc/systemd/system/plasmalogin.service.d"; : > "$T/etc/systemd/system/plasmalogin.service.d/zz-steamify-temp-login.conf"; unset -f gaming_status; source <(mapped lib/login-manager.sh)
+check "gaming_status: the layout of 2.13.x counts as on (the update moves it to the one drop-in)" 'gaming_status'
+rm -rf "$T/etc/systemd/system/plasmalogin.service.d"
+check "gaming_status: no drop-in, no fragment: off" '! gaming_status'
 
 # --- turning the conversion off removes our login files and the session fragments
 DM=plasmalogin; rm -rf "$CONF"; WANTED=([single]=0); configure_autologin
 remove_autologin_conf
-check "conversion off: our fragment, the session fragments, the helper and both drop-ins are gone" \
-    '[[ -z "$(ls "$CONF" 2>/dev/null)" && ! -e "$T/etc/systemd/system/steamify-relogin.path" && ! -e "$T/etc/systemd/system/plasmalogin.service.d/zz-steamify-temp-login.conf" && ! -e "$T/etc/systemd/system/plasmalogin.service.d/zz-steamify-greeter-session.conf" ]]'
+check "conversion off: our fragment, the session fragments, the helpers and the drop-in are gone" \
+    '[[ -z "$(ls "$CONF" 2>/dev/null)" && ! -e "$T/etc/systemd/system/steamify-relogin.path" && ! -e "$DROPIN" && ! -e "$T/usr/local/libexec/steamify-greeter-session" ]]'
 
 exit $fail
