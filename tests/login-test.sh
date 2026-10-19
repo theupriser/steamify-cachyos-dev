@@ -75,24 +75,24 @@ rm -rf "$CONF"; WANTED=([single]=1); configure_autologin; rc=$?
 check "single user: configure_autologin succeeds (the shell runs with pipefail)" '[[ $rc == 0 ]]'
 check "single user: autologin fragment for the user, into gamescope, with Relogin" \
     'grep -qx "User=tester" "$CONF/10-gamescope-autologin.conf" && grep -qx "Session=gamescope-session.desktop" "$CONF/10-gamescope-autologin.conf" && grep -qx "Relogin=true" "$CONF/10-gamescope-autologin.conf"'
-check "single user: steam-set-session started it in gamescope, no relogin helper, no greeter session" \
-    'grep -qx "Session=gamescope-session.desktop" "$CONF/zz-steamos-autologin.conf" && [[ ! -e "$T/etc/systemd/system/steamify-relogin.path" && ! -e "$T/usr/local/libexec/steamify-greeter-session" ]] && ! grep -q "steamify-greeter-session" "$DROPIN"'
+check "single user: steam-set-session started it in gamescope; the session helper is there but without --relogin; no greeter session" \
+    'grep -qx "Session=gamescope-session.desktop" "$CONF/zz-steamos-autologin.conf" && [[ -x "$T/usr/local/libexec/steamify-relogin" && -f "$T/etc/systemd/system/steamify-relogin.path" ]] && grep -q "^ExecStart=.*steamify-relogin" "$T/etc/systemd/system/steamify-relogin.service" && ! grep -q -- "--relogin" "$T/etc/systemd/system/steamify-relogin.service" && [[ ! -e "$T/usr/local/libexec/steamify-greeter-session" ]] && ! grep -q "steamify-greeter-session" "$DROPIN"'
 check "both modes: the one drop-in creates the one-shot files for plasma-login-manager and empties the relogin file" \
     'grep -q "zzt-holo-temp-login.conf" "$DROPIN" && grep -q "zzt-steamos-temp-login.conf" "$DROPIN" && grep -q "zzt-steamify-relogin.conf" "$DROPIN" && [[ "$(ls "$T/etc/systemd/system/plasmalogin.service.d")" == "zz-steamify.conf" ]]'
 rm -rf "$CONF"; WANTED=([single]=0); configure_autologin; rc=$?
 check "multi-user: configure_autologin succeeds (the shell runs with pipefail)" '[[ $rc == 0 ]]'
 check "multi-user: no autologin fragment (the login screen at start)" '[[ ! -e "$CONF/10-gamescope-autologin.conf" ]]'
-check "multi-user: relogin helper (script, path unit, service) installed and enabled" \
-    '[[ -x "$T/usr/local/libexec/steamify-relogin" && -f "$T/etc/systemd/system/steamify-relogin.path" && -f "$T/etc/systemd/system/steamify-relogin.service" ]] && grep -q "enable --now steamify-relogin.path" "$SYSTEMCTL_LOG"'
+check "multi-user: relogin helper (script, path unit, service with --relogin) installed and enabled" \
+    '[[ -x "$T/usr/local/libexec/steamify-relogin" && -f "$T/etc/systemd/system/steamify-relogin.path" && -f "$T/etc/systemd/system/steamify-relogin.service" ]] && grep -q -- "--relogin" "$T/etc/systemd/system/steamify-relogin.service" && grep -q "enable --now steamify-relogin.path" "$SYSTEMCTL_LOG"'
 check "multi-user: the relogin path unit watches what a session switch writes" \
     'grep -q "zz-steamos-autologin.conf" "$T/etc/systemd/system/steamify-relogin.path" && grep -q "zzt-holo-temp-login.conf" "$T/etc/systemd/system/steamify-relogin.path" && grep -q "zzt-steamos-temp-login.conf" "$T/etc/systemd/system/steamify-relogin.path"'
 check "multi-user: the login screen preselects the session of Boot into (script, run before the login manager starts)" \
     '[[ -x "$T/usr/local/libexec/steamify-greeter-session" ]] && grep -q "ExecStartPre=-.*steamify-greeter-session" "$DROPIN"'
 set_login_mode single
-check "multi-user to single user: autologin back, helper and greeter session removed" \
-    'grep -qx "User=tester" "$CONF/10-gamescope-autologin.conf" && [[ ! -e "$T/etc/systemd/system/steamify-relogin.path" && ! -e "$T/usr/local/libexec/steamify-relogin" && ! -e "$T/usr/local/libexec/steamify-greeter-session" ]] && ! grep -q "steamify-greeter-session" "$DROPIN"'
+check "multi-user to single user: autologin back, --relogin and the greeter session removed (the session helper stays)" \
+    'grep -qx "User=tester" "$CONF/10-gamescope-autologin.conf" && [[ -x "$T/usr/local/libexec/steamify-relogin" && ! -e "$T/usr/local/libexec/steamify-greeter-session" ]] && ! grep -q -- "--relogin" "$T/etc/systemd/system/steamify-relogin.service" && ! grep -q "steamify-greeter-session" "$DROPIN"'
 set_login_mode multi
-check "single user to multi-user: autologin fragment gone, helper installed again" '[[ ! -e "$CONF/10-gamescope-autologin.conf" && -x "$T/usr/local/libexec/steamify-relogin" ]]'
+check "single user to multi-user: autologin fragment gone, the helper runs with --relogin again" '[[ ! -e "$CONF/10-gamescope-autologin.conf" && -x "$T/usr/local/libexec/steamify-relogin" ]] && grep -q -- "--relogin" "$T/etc/systemd/system/steamify-relogin.service"'
 relogin_helper_remove; rm -rf "$T/etc/systemd/system/plasmalogin.service.d"; set_login_mode multi
 check "without the conversion (no drop-in) set_login_mode changes nothing" '[[ ! -e "$T/etc/systemd/system/steamify-relogin.path" && ! -e "$CONF/10-gamescope-autologin.conf" ]]'
 
@@ -104,25 +104,45 @@ n=$(cat "$FAKE_STATE" 2>/dev/null || echo 0); echo $((n + 1)) > "$FAKE_STATE"
 if [[ $n -lt 2 ]]; then echo "3 1000 rick seat0 123 user tty1 no -"; else echo "4 1000 rick seat0 456 user tty1 no -"; fi
 EOF
 chmod +x "$T/bin/loginctl"
-sed -e "s|/etc/plasmalogin.conf.d/zzt-steamify-relogin.conf|$T/relogin.conf|" -e 's|sleep 1|sleep 0|' patches/steamify-relogin.sh > "$T/relogin.sh"
-FAKE_STATE="$T/fake-state" PATH="$T/bin:$PATH" bash "$T/relogin.sh"
-check "relogin helper: the file is empty again once a different session is up" '[[ -f "$T/relogin.conf" && ! -s "$T/relogin.conf" ]]'
+hs() { sed -e "s|^CONF_DIR=.*|CONF_DIR=$1|" -e 's|sleep 1|sleep 0|' -e "s|seq 40|seq ${2:-40}|" patches/steamify-relogin.sh > "$T/helper.sh"; }
+mkdir -p "$T/cd1"; hs "$T/cd1"
+FAKE_STATE="$T/fake-state" PATH="$T/bin:$PATH" bash "$T/helper.sh" --relogin
+check "relogin helper (--relogin): the file is empty again once a different session is up" '[[ -f "$T/cd1/zzt-steamify-relogin.conf" && ! -s "$T/cd1/zzt-steamify-relogin.conf" ]]'
 # while the same session is still there: it keeps the entry and ends emptied after the timeout, having written it
 cat > "$T/bin/loginctl" << 'EOF'
 #!/bin/bash
 echo "3 1000 rick seat0 123 user tty1 no -"
 echo "$(date +%s) called" >> "$FAKE_LOG"
 EOF
-sed -e "s|/etc/plasmalogin.conf.d/zzt-steamify-relogin.conf|$T/relogin2.conf|" -e 's|sleep 1|sleep 0|' -e 's|seq 40|seq 3|' -e "s|: > \"\$CONF\"|cp \"\$CONF\" $T/relogin2.seen; : > \"\$CONF\"|" patches/steamify-relogin.sh > "$T/relogin2.sh"
-FAKE_LOG="$T/fake-log" PATH="$T/bin:$PATH" bash "$T/relogin2.sh"
+mkdir -p "$T/cd2"; hs "$T/cd2" 3; sed -i "s|^: > \"\$RELOGIN_CONF\"|cp \"\$RELOGIN_CONF\" $T/relogin2.seen; : > \"\$RELOGIN_CONF\"|" "$T/helper.sh"
+FAKE_LOG="$T/fake-log" PATH="$T/bin:$PATH" bash "$T/helper.sh" --relogin
 check "relogin helper: wrote User= and Relogin=true for the logged-in user while waiting" 'grep -qx "User=rick" "$T/relogin2.seen" && grep -qx "Relogin=true" "$T/relogin2.seen" && grep -qx "\[Autologin\]" "$T/relogin2.seen"'
 cat > "$T/bin/loginctl" << 'EOF'
 #!/bin/bash
 echo "c1 957 plasmalogin seat0 1 greeter tty1 no -"
 EOF
-sed -e "s|/etc/plasmalogin.conf.d/zzt-steamify-relogin.conf|$T/relogin3.conf|" patches/steamify-relogin.sh > "$T/relogin3.sh"
-PATH="$T/bin:$PATH" bash "$T/relogin3.sh"
-check "relogin helper: at the login screen (no user session) it writes nothing" '[[ ! -e "$T/relogin3.conf" ]]'
+mkdir -p "$T/cd3"; hs "$T/cd3"
+PATH="$T/bin:$PATH" bash "$T/helper.sh" --relogin
+check "relogin helper: at the login screen (no user session) it writes nothing" '[[ ! -e "$T/cd3/zzt-steamify-relogin.conf" ]]'
+# without --relogin (single user mode) it never writes a relogin entry, whatever session is there
+cat > "$T/bin/loginctl" << 'EOF'
+#!/bin/bash
+echo "3 1000 rick seat0 123 user tty1 no -"
+EOF
+mkdir -p "$T/cd4"; hs "$T/cd4"; PATH="$T/bin:$PATH" bash "$T/helper.sh"
+check "session helper without --relogin (single user mode): no relogin entry" '[[ ! -e "$T/cd4/zzt-steamify-relogin.conf" ]]'
+
+# --- the last pick wins: Return to Gaming Mode after Switch to Desktop must not be sent back by the stale one-shot
+oneshot() { mkdir -p "$1"; printf '[Autologin]\nSession=plasma.desktop\n' > "$1/zzt-steamos-temp-login.conf"; : > "$1/zzt-holo-temp-login.conf"; }
+mkdir -p "$T/cd5"; hs "$T/cd5"; oneshot "$T/cd5"; sleep 0.05
+printf '[Autologin]\nSession=gamescope-session.desktop\n' > "$T/cd5/zz-steamos-autologin.conf"
+PATH="$T/bin:$PATH" bash "$T/helper.sh"
+check "last pick wins: gamescope picked after a one-shot Switch to Desktop -> the stale one-shot is emptied" '[[ ! -s "$T/cd5/zzt-steamos-temp-login.conf" ]] && grep -qx "Session=gamescope-session.desktop" "$T/cd5/zz-steamos-autologin.conf"'
+mkdir -p "$T/cd6"; hs "$T/cd6"; printf '[Autologin]\nSession=gamescope-session.desktop\n' > "$T/cd6/zz-steamos-autologin.conf"; sleep 0.05; oneshot "$T/cd6"
+PATH="$T/bin:$PATH" bash "$T/helper.sh"
+check "last pick wins: a one-shot written after the pick (Switch to Desktop) is kept" 'grep -qx "Session=plasma.desktop" "$T/cd6/zzt-steamos-temp-login.conf"'
+mkdir -p "$T/cd7"; hs "$T/cd7"; PATH="$T/bin:$PATH" bash "$T/helper.sh"
+check "last pick wins: no files at all is fine" '[[ $? == 0 ]]'
 
 # --- the greeter session script
 mkdir -p "$T/state-greeter"
