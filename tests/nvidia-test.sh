@@ -9,7 +9,8 @@ fail=0
 check() { if eval "$2"; then echo "ok   $1"; else echo "FAIL $1"; fail=1; fi; }
 
 SCRIPT_DIR="$PWD"; HOME="$T/home"; mkdir -p "$HOME"
-source lib/common.sh; source lib/state.sh; source lib/login-manager.sh; source lib/single-user.sh; source lib/hdmi-refresh.sh; source lib/vram-booster.sh; source lib/nvidia.sh; source lib/menu.sh
+source lib/common.sh; source lib/state.sh; source lib/desktop.sh; source lib/login-manager.sh; source lib/single-user.sh; source lib/hdmi-refresh.sh; source lib/vram-booster.sh; source lib/nvidia.sh; source lib/menu.sh
+desktop_installed() { [[ "$1" == kde ]]; }   # a Plasma session is installed (the theme and single user mode need one)
 # Runs as the user, and refuses anything under the real system folders: a test must never touch them.
 sudo() { local a; for a in "$@"; do case "$a" in /etc/*|/usr/*|/boot/*|/var/*) echo "REFUSED sudo $*" >&2; return 1 ;; esac; done; "$@"; }
 info() { :; }; ok() { :; }; warn() { :; }; err() { echo "ERR $*"; }
@@ -29,10 +30,11 @@ kreadconfig6() {
 # A pretend package database and systemd: what the tests assert on.
 PKGS=""; PACMAN_LOG="$T/pacman.log"; : > "$PACMAN_LOG"; ENABLED=0
 pacman() {
+    local a
     case "$1" in
         -Q) [[ " $PKGS " == *" $2 "* ]] ;;
-        -S) echo "S $*" >> "$PACMAN_LOG"; PKGS+=" ${*: -1}" ;;
-        -Rns) echo "R $*" >> "$PACMAN_LOG"; PKGS=" ${PKGS//${*: -1}/} " ;;
+        -S) echo "S $*" >> "$PACMAN_LOG"; for a in "${@:2}"; do [[ "$a" == -* ]] || PKGS+=" $a"; done ;;
+        -Rns) echo "R $*" >> "$PACMAN_LOG"; for a in "${@:2}"; do [[ "$a" == -* ]] || PKGS=" ${PKGS//$a/} "; done ;;
     esac
 }
 user_systemctl() {
@@ -55,7 +57,7 @@ NVIDIA_DRM_DIR="$T/drm"
 backup_file() { [[ -f "$1.bak" ]] || cp "$1" "$1.bak"; }
 REBUILDS=0; nvidia_rebuild_boot() { REBUILDS=$((REBUILDS + 1)); }
 : > "$T/cmdline"; NVIDIA_CMDLINE="$T/cmdline"   # the running kernel's command line: without the parameters
-NVIDIA_INITRAMFS_CONF="$T/90-steamify-nvidia.conf"
+NVIDIA_INITRAMFS_CONF="$T/90-steamify-nvidia.conf"; NVIDIA_MODPROBE="$T/modprobe-steamify-nvidia.conf"
 NVIDIA_SCRIPT="$T/libexec/steamify-nvidia-initramfs"; NVIDIA_HOOK="$T/hooks/85-steamify-nvidia-initramfs.hook"
 mkdir -p "$T/mods/6.1.0-cachyos/kernel"; : > "$T/mods/6.1.0-cachyos/kernel/nvidia-drm.ko.zst"; : > "$T/mods/6.1.0-cachyos/pkgbase"
 NVIDIA_MODULES_DIR="$T/mods"
@@ -71,8 +73,10 @@ FAKE_DRIVER=1; NVIDIA_DRM_DIR="$T/none"; check "no NVIDIA GPU: not an NVIDIA PC"
 NVIDIA_DRM_DIR="$T/drm"
 
 # --- which items the menu shows
-check "NVIDIA PC: the SteamOS conversion and its gamescope options are hidden" '! component_available gaming && ! component_available boot && ! component_available glyphs'
-check "NVIDIA PC: Gaming on NVIDIA and Big Picture are shown" 'component_available nvidia && component_available bigpicture'
+check "NVIDIA PC: the SteamOS conversion and its gamescope options are offered (patched gamescope, since 2.12.0)" 'component_available gaming && component_available boot && component_available glyphs'
+check "NVIDIA PC: Gaming on NVIDIA and Big Picture are not offered any more" '! component_available nvidia && ! component_available bigpicture'
+# The retired module (lib/nvidia.sh) is still there for the move to the conversion: its own tests below pretend it is offered.
+nvidia_available() { nvidia_present && ! gaming_status; }   # what it was before 2.12.0
 GAMING_ON=1
 check "NVIDIA PC with the conversion already on: it is shown, so it can be turned off" 'component_available gaming && component_available boot'
 check "...and Gaming on NVIDIA is hidden (both would start Steam)" '! component_available nvidia && ! component_available bigpicture'
@@ -92,7 +96,7 @@ steamgame_available() { return 0; }; NVIDIA_DRM_DIR="$T/drm"
 # --- turning it on
 check "off to begin with" '! nvidia_status && ! bigpicture_status'
 nvidia_enable
-check "Steam is installed when missing, and recorded as ours" 'grep -q "^S " "$PACMAN_LOG" && [[ "$(state_get nvidia installed_pkgs)" == steam ]]'
+check "Steam is installed when missing, and recorded as ours" 'grep -q "^S " "$PACMAN_LOG" && [[ " $(state_get nvidia installed_pkgs) " == *" steam "* ]]'
 check "the autostart unit is written: Steam without arguments" 'grep -q "^ExecStart=/usr/bin/steam $" "$UNIT"'
 check "it is on" 'nvidia_status && ! bigpicture_status'
 n="$(wc -l < "$PACMAN_LOG")"; nvidia_enable
@@ -116,7 +120,7 @@ check "Big Picture without the unit does nothing" 'bigpicture_enable && bigpictu
 # --- Steam that was there already is never removed
 PKGS=" steam"; : > "$PACMAN_LOG"
 nvidia_enable; nvidia_disable
-check "Steam installed before is kept, and not installed again" '[[ ! -s "$PACMAN_LOG" ]] && pacman -Q steam'
+check "Steam installed before is kept, and not installed again" '! grep -qE "^S .* steam$" "$PACMAN_LOG" && pacman -Q steam'
 
 # --- kernel parameters and early modules (a supported card only: RTX 20 series or newer)
 check "RTX 5080 (2c02) is supported: no chwd legacy lists" nvidia_supported
@@ -176,20 +180,20 @@ check "no setting to edit: error, nothing rebuilt" '! nvidia_kernel_enable >/dev
 FAKE_DRIVER=0; NVIDIA_DRM_DIR="$T/drm"; printf 'LINUX_OPTIONS="quiet"\n' > "$T/sdboot"; F="$T/sdboot"; REBUILDS=0; nvidia_kernel_enable
 check "no NVIDIA driver: nothing touched" '[[ "$(cat "$F")" == "LINUX_OPTIONS=\"quiet\"" && $REBUILDS == 0 ]]'
 
-# --- single user mode on NVIDIA: its own login step (SDDM, autologin into Plasma) without the conversion
+# --- single user mode on NVIDIA: its own login step (plasma-login-manager, autologin into Plasma) without the conversion
 FAKE_DRIVER=1; NVIDIA_DRM_DIR="$T/drm"   # an earlier section ended without the driver
-SW="$T/switches.log"; : > "$SW"; TARGET_USER=tester; SINGLE_AUTOLOGIN="$T/sddm.conf.d/zzz-steamify-autologin.conf"
-switch_to_sddm() { echo sddm >> "$SW"; }; switch_to_plasmalogin() { echo plasmalogin >> "$SW"; }
-remove_sddm_base_autologin() { :; }   # would look at the real /etc/sddm.conf
+SW="$T/switches.log"; : > "$SW"; TARGET_USER=tester; SINGLE_AUTOLOGIN="$T/plasmalogin.conf.d/zzz-steamify-autologin.conf"
+switch_to_plasmalogin() { echo plasmalogin >> "$SW"; }
+remove_sddm_autologin() { :; }; remove_base_autologin() { :; }   # would touch the real /etc
 GAMING_ON=0
 check "single user mode is offered on NVIDIA without the conversion..." 'component_available single'
 GAMING_ON=1; check "...and with it" 'component_available single'; GAMING_ON=0
 single_login_enable
-check "single user: SDDM, autologin of the user into the Plasma session" 'grep -qx "User=tester" "$SINGLE_AUTOLOGIN" && grep -qx "Session=plasma.desktop" "$SINGLE_AUTOLOGIN" && grep -qx "Relogin=true" "$SINGLE_AUTOLOGIN" && grep -qx sddm "$SW"'
+check "single user: autologin of the user into the Plasma session" 'grep -qx "User=tester" "$SINGLE_AUTOLOGIN" && grep -qx "Session=plasma.desktop" "$SINGLE_AUTOLOGIN" && grep -qx "Relogin=true" "$SINGLE_AUTOLOGIN" && grep -qx plasmalogin "$SW"'
 c1="$(cat "$SINGLE_AUTOLOGIN")"; single_login_enable
 check "single user login: a second run changes nothing" '[[ "$(cat "$SINGLE_AUTOLOGIN")" == "$c1" ]]'
 single_login_disable
-check "single user off: the file is gone and plasma-login-manager is the login manager again" '[[ ! -e "$SINGLE_AUTOLOGIN" ]] && grep -qx plasmalogin "$SW"'
+check "single user off: the file is gone" '[[ ! -e "$SINGLE_AUTOLOGIN" ]]'
 : > "$SW"; GAMING_ON=1; single_login_enable
 check "with the conversion on, single user mode leaves the login to it" '[[ ! -e "$SINGLE_AUTOLOGIN" && ! -s "$SW" ]]'
 GAMING_ON=0
@@ -201,7 +205,7 @@ check "unticking Gaming on NVIDIA unticks Big Picture" '[[ "${WANTED[nvidia]}" =
 toggle_component bigpicture
 check "ticking Big Picture ticks Gaming on NVIDIA" '[[ "${WANTED[nvidia]}" == 1 && "${WANTED[bigpicture]}" == 1 ]]'
 WANTED[single]=0; WANTED[gaming]=0; toggle_component single
-check "ticking single user mode does not tick the conversion where it isn't offered" '[[ "${WANTED[single]}" == 1 && "${WANTED[gaming]}" == 0 ]]'
+check "ticking single user mode ticks the conversion (offered on NVIDIA PCs too since 2.12.0)" '[[ "${WANTED[single]}" == 1 && "${WANTED[gaming]}" == 1 ]]'
 check "Big Picture follows Gaming on NVIDIA in the menu" '[[ " ${COMPONENTS[*]} " == *" nvidia bigpicture "* && "${PARENT[bigpicture]}" == nvidia ]]'
 
 exit $fail
