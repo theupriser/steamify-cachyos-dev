@@ -1,5 +1,16 @@
 # TODO
 
+## Steamify: login/session code cleanup (planned 2026-10-19)
+
+Plan with phases, refactor table, hardware pass and definition of done: [cleanup/PLAN.md](cleanup/PLAN.md).
+Work happens on `feature/code-cleanup` (the optimization branch of steamify-cachyos), brought up to date with
+`release/2.14.0` first; its `TECHNICAL.md` / `AGENTS.md` updates are made there.
+
+- [ ] Merge `release/2.14.0` into `feature/code-cleanup` (keep its helpers, keep 2.14's behaviour)
+- [ ] Phase 0: green test baseline (merge `feature/menu-test`, fix the 12 + 2 failing tests, regenerate the golden file)
+- [ ] Phase 1: characterization tests for `gaming_enable`, login mode, relogin helper, greeter session, shortcut, legacy migration
+- [ ] Phase 2: refactors 2a-2g (smallest first), docs updated with each step
+
 ## Tests in CI: dropped 2026-09-30, the VM tests run locally
 
 Decision: `scripts/vmtest.sh` runs on the PC before the release PR, not on GitHub or Gitea runners (too slow, too heavy, and
