@@ -71,8 +71,8 @@ FAKE_DRIVER=1; NVIDIA_DRM_DIR="$T/none"; check "no NVIDIA GPU: not an NVIDIA PC"
 NVIDIA_DRM_DIR="$T/drm"
 
 # --- which items the menu shows
-check "NVIDIA PC: the SteamOS conversion and its gamescope options are hidden" '! component_available gaming && ! component_available boot && ! component_available glyphs'
-check "NVIDIA PC: Gaming on NVIDIA and Big Picture are shown" 'component_available nvidia && component_available bigpicture'
+check "NVIDIA PC: the SteamOS conversion and its gamescope options are offered" 'component_available gaming && component_available boot && component_available glyphs'
+check "NVIDIA PC: Gaming on NVIDIA and Big Picture are not offered any more (the conversion replaces them)" '! component_available nvidia && ! component_available bigpicture'
 GAMING_ON=1
 check "NVIDIA PC with the conversion already on: it is shown, so it can be turned off" 'component_available gaming && component_available boot'
 check "...and Gaming on NVIDIA is hidden (both would start Steam)" '! component_available nvidia && ! component_available bigpicture'
@@ -181,11 +181,12 @@ FAKE_DRIVER=1; NVIDIA_DRM_DIR="$T/drm"   # an earlier section ended without the 
 SW="$T/switches.log"; : > "$SW"; TARGET_USER=tester; SINGLE_AUTOLOGIN="$T/sddm.conf.d/zzz-steamify-autologin.conf"
 switch_to_sddm() { echo sddm >> "$SW"; }; switch_to_plasmalogin() { echo plasmalogin >> "$SW"; }
 remove_sddm_base_autologin() { :; }   # would look at the real /etc/sddm.conf
+desktop_installed() { [[ "$1" == kde ]]; }   # a Plasma session is not running in the test box
 GAMING_ON=0
 check "single user mode is offered on NVIDIA without the conversion..." 'component_available single'
 GAMING_ON=1; check "...and with it" 'component_available single'; GAMING_ON=0
 single_login_enable
-check "single user: SDDM, autologin of the user into the Plasma session" 'grep -qx "User=tester" "$SINGLE_AUTOLOGIN" && grep -qx "Session=plasma.desktop" "$SINGLE_AUTOLOGIN" && grep -qx "Relogin=true" "$SINGLE_AUTOLOGIN" && grep -qx sddm "$SW"'
+check "single user: plasma-login-manager, autologin of the user into the Plasma session" 'grep -qx "User=tester" "$SINGLE_AUTOLOGIN" && grep -qx "Session=plasma.desktop" "$SINGLE_AUTOLOGIN" && grep -qx "Relogin=true" "$SINGLE_AUTOLOGIN" '
 c1="$(cat "$SINGLE_AUTOLOGIN")"; single_login_enable
 check "single user login: a second run changes nothing" '[[ "$(cat "$SINGLE_AUTOLOGIN")" == "$c1" ]]'
 single_login_disable
@@ -196,12 +197,10 @@ GAMING_ON=0
 # --- the menu rules
 declare -A WANTED=([nvidia]=1 [bigpicture]=1 [gaming]=0 [boot]=0 [single]=0 [machine]=0 [poweroff]=0 [launcher]=0 [steamgame]=0)
 component_selectable() { return 0; }
-toggle_component nvidia
-check "unticking Gaming on NVIDIA unticks Big Picture" '[[ "${WANTED[nvidia]}" == 0 && "${WANTED[bigpicture]}" == 0 ]]'
-toggle_component bigpicture
-check "ticking Big Picture ticks Gaming on NVIDIA" '[[ "${WANTED[nvidia]}" == 1 && "${WANTED[bigpicture]}" == 1 ]]'
-WANTED[single]=0; WANTED[gaming]=0; toggle_component single
-check "ticking single user mode does not tick the conversion where it isn't offered" '[[ "${WANTED[single]}" == 1 && "${WANTED[gaming]}" == 0 ]]'
+toggle_component single
+check "ticking single user mode ticks the SteamOS conversion it needs" '[[ "${WANTED[single]}" == 1 && "${WANTED[gaming]}" == 1 ]]'
+toggle_component gaming
+check "unticking the conversion unticks single user mode" '[[ "${WANTED[single]}" == 0 && "${WANTED[gaming]}" == 0 ]]'
 check "Big Picture follows Gaming on NVIDIA in the menu" '[[ " ${COMPONENTS[*]} " == *" nvidia bigpicture "* && "${PARENT[bigpicture]}" == nvidia ]]'
 
 exit $fail

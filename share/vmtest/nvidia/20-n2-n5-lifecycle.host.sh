@@ -5,6 +5,10 @@ unit='~/.config/systemd/user/steamify-steam-autostart.service'
 g() { guest "$@"; }
 yes_() { [[ "$(g "$1 && echo YES || echo NO" | tail -n 1)" == YES ]]; }   # a guest condition
 
+# The base image's package database is as old as the image: a full upgrade first, or packages the mirrors have dropped since (pyside6)
+# 404. (Only here: a partial sync in the other suites breaks installs, e.g. poppler vs poppler-glib.)
+g 'sudo pacman -Syu --noconfirm >/dev/null 2>&1; echo done' | tail -n 1 | grep -q done || fail "N2 upgrading the VM first"
+
 # N2: a locked pacman database: the run fails, says why and changes nothing (the pre-flight's own messages are checked in G1).
 g 'sudo touch /var/lib/pacman/db.lck'
 rc="$(g 'fake_nvidia; sf --defaults --options gaming > /tmp/n2.log; echo "rc=$?"' | tail -n 1)"

@@ -17,7 +17,7 @@ grep -q '^\[ERROR\]' <<< "$out" && fail "R1.2 errors: $(grep -m1 '^\[ERROR\]' <<
 grep -q "^\[OK\]" <<< "$out" && pass "R1.2 applied (the run printed [OK] lines)" || fail "R1.2 printed no [OK] line"
 expect_on gaming theme glyphs single launcher notify cec machine poweroff
 # R1.3: the state (what vmstate.sh prints)
-[[ "$(current_display_manager)" == sddm ]] && [[ -f /etc/sddm.conf.d/10-gamescope-autologin.conf ]] && pass "R1.3 SDDM with autologin" || fail "R1.3 no SDDM autologin"
+[[ "$(current_display_manager)" == plasmalogin ]] && [[ -f /etc/plasmalogin.conf.d/10-gamescope-autologin.conf ]] && pass "R1.3 plasmalogin with autologin" || fail "R1.3 no plasmalogin autologin"
 n=$(compgen -G "/sys/class/leds/valve-leds*" | wc -l); [[ $n -eq 17 ]] && pass "R1.3 17 LED nodes" || fail "R1.3 $n LED nodes"
 own=$(stat -c %U /sys/class/leds/valve-leds*/brightness 2>/dev/null | sort -u | tr '\n' ' '); [[ "$own" == "$(id -un) " ]] && pass "R1.3 LEDs owned by the user" || fail "R1.3 LED owner: $own"
 [[ $(dkms status | grep -c ': installed') -ge $((3 * $(ls /usr/lib/modules | wc -w))) ]] && pass "R1.3 DKMS installed for every kernel" || fail "R1.3 DKMS: $(dkms status | tr '\n' ';')"

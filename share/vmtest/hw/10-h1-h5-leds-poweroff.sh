@@ -1,4 +1,5 @@
 # H1 (LED driver) and H5 (power-off module) with the faked Steam Machine.
+# base: applied
 info "applying Steamify (installs packages, builds kernel modules: a few minutes)..."
 sf --defaults --options gaming,theme,glyphs,single,launcher,notify,cec,machine,poweroff >/dev/null; rc=$?
 [[ $rc -eq 0 ]] && pass "Steamify applied (exit 0)" || fail "Steamify exit $rc"

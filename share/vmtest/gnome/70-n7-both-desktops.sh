@@ -9,7 +9,7 @@ grep -q "SteamOS theme for GNOME" <<< "$out" && pass "GN7 GNOME theme offered" |
 grep -q "Install SteamOS theme: Vapor" <<< "$out" && pass "GN7 Plasma theme offered too" || fail "GN7 no Plasma theme row"
 grep -q "Single user mode" <<< "$out" && pass "GN7 single user mode offered" || fail "GN7 no single user mode"
 [[ "$(current_display_manager)" == gdm ]] && pass "GN7 still GDM" || fail "GN7 display manager: $(current_display_manager)"
-choose_login_manager; [[ "$LOGIN_MANAGER" == gdm ]] && pass "GN7 choose_login_manager keeps GDM" || fail "GN7 choose_login_manager: $LOGIN_MANAGER"
+lm=$(choose_login_manager); [[ "$lm" == gdm ]] && pass "GN7 choose_login_manager keeps GDM" || fail "GN7 choose_login_manager: $lm"
 info "applying the conversion with both desktops..."
 sf --defaults --options gaming --boot gamescope >/tmp/gn7.out; [[ $? -eq 0 ]] && pass "GN7 conversion applied" || fail "GN7 apply: $(grep -m1 ERROR /tmp/gn7.out)"
 [[ "$(current_display_manager)" == gdm ]] && pass "GN7 GDM is still the login manager after the conversion" || fail "GN7 login manager changed to $(current_display_manager)"

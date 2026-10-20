@@ -58,17 +58,19 @@ vm_stop() {
 # A fresh VM for a block: new overlay of the base, the snapshot's UEFI vars, Plasma up, repo mounted, package cache bound.
 vm_fresh() {   # vm_fresh [VAR=value...]: extra environment for the VM start (BIOS_VERSION=...)
     vm_stop
-    cp "$repo/run.sh" "$VM_DIR/run.sh"; cp "$src/vars.ssh-ready.fd" "$VM_DIR/vars.fd"
+    cp "$repo/run.sh" "$VM_DIR/run.sh"; cp "${cur_vars:-$src/vars.ssh-ready.fd}" "$VM_DIR/vars.fd"
     rm -f "$VM_DIR/disk.qcow2" "$VM_DIR/known_hosts"
-    qemu-img create -q -f qcow2 -b "$base" -F qcow2 "$VM_DIR/disk.qcow2" || return 1
+    qemu-img create -q -f qcow2 -b "${cur_base:-$base}" -F qcow2 "$VM_DIR/disk.qcow2" || return 1
     local fremont=--fremont; [[ $desk == gnome ]] && fremont=   # GNOME: a plain PC
     (cd "$VM_DIR" && env "$@" nohup ./run.sh $fremont > vm.log 2>&1 &)
     local _; for _ in $(seq 100); do vm_ssh -o ConnectTimeout=3 true 2>/dev/null && break; sleep 3; done
-    vm_ssh -o LogLevel=ERROR "DESK=$desk bash -s" <<'REMOTE'
+    vm_ssh -o LogLevel=ERROR "DESK=$desk FORCE=${cur_base:+$([[ ${cur_base:-} == "${applied:-}" ]] && echo 1)} bash -s" <<'REMOTE'
 sudo mount -t 9p -o trans=virtio,version=9p2000.L repo /mnt
 if [[ $DESK == kde ]]; then
 sudo mkdir -p /etc/plasmalogin.conf.d
 printf '[Autologin]\nUser=%s\nSession=plasma.desktop\n' "$USER" | sudo tee /etc/plasmalogin.conf.d/00-test-autologin.conf >/dev/null
+# an applied image logs in to gamescope (zz-steamos-autologin.conf wins over 00-): the harness needs Plasma, so a later file
+[[ ${FORCE:-} == 1 ]] && { printf '[Autologin]\nUser=%s\nSession=plasma.desktop\n' "$USER" | sudo tee /etc/plasmalogin.conf.d/zzzzz-test-autologin.conf >/dev/null; sudo systemctl restart plasmalogin; }
 for _ in $(seq 10); do pgrep -u "$USER" -x plasmashell >/dev/null && break; sleep 3; done
 pgrep -u "$USER" -x plasmashell >/dev/null || { sudo systemctl reset-failed plasmalogin; sudo systemctl restart plasmalogin; }
 for _ in $(seq 40); do pgrep -u "$USER" -x plasmashell >/dev/null && break; sleep 3; done
@@ -94,11 +96,34 @@ fi
 REMOTE
 }
 
+# A block with "# base: applied" in its header starts from a second base image where Steamify is already applied (everything on,
+# packages and DKMS modules built): blocks that only check state need not repeat the apply. Rebuilt when Steamify's files change.
+applied="$src/base-applied.qcow2"; applied_all=gaming,theme,glyphs,single,launcher,notify,cec,machine,poweroff
+applied_stamp() { (cd "$REPO" && find steamify.sh lib patches services -type f | sort | xargs sha256sum | sha256sum | cut -c1-16); }
+prepare_applied() {
+    [[ -f "$applied" && "$(cat "$applied.stamp" 2>/dev/null)" == "$(applied_stamp)" ]] && return 0
+    echo "Making $applied (Steamify applied once, a few minutes)..." >&2
+    cur_base=$base; cur_vars=$src/vars.ssh-ready.fd
+    vm_fresh > /tmp/vmsuite-$suite-reset.out 2>&1 || return 1
+    cat "$repo/share/vmtest/prelude.sh" - <<EOT | vm_ssh -o ConnectTimeout=6 -o LogLevel=ERROR bash -s >/dev/null 2>&1
+sf --defaults --options $applied_all >/dev/null || exit 1
+EOT
+    local rc=$?
+    vm_stop
+    [[ $rc -eq 0 ]] || return 1
+    qemu-img convert -O qcow2 "$VM_DIR/disk.qcow2" "$applied.tmp" && mv "$applied.tmp" "$applied" &&
+        cp "$VM_DIR/vars.fd" "$src/vars.applied.fd" && applied_stamp > "$applied.stamp"
+}
+
 {
 printf '\n===== vmsuite.sh %s (%s) =====\n' "$suite" "$(date +%T)"
 for block in "$dir"/*.sh; do
     [[ -z "${ONLY:-}" || "$(basename "$block")" == "$ONLY"* ]] || continue   # ONLY=50: just that block
     printf '\n##### %s %s\n' "$(date +%T)" "$(basename "$block" .sh)"
+    cur_base=$base; cur_vars=$src/vars.ssh-ready.fd
+    if head -n 5 "$block" | grep -q '^# base: applied'; then
+        ( flock 8; prepare_applied ) 8>"$src/.applied.lock" && cur_base=$applied && cur_vars=$src/vars.applied.fd || echo "INFO no applied base, using the clean one"
+    fi
     vm_fresh $(sed -n 's/^# env: //p' "$block" | head -n 1) > /tmp/vmsuite-$suite-reset.out 2>&1 \
         || { echo "FAIL the VM did not come up: $(tail -n 1 /tmp/vmsuite-$suite-reset.out)"; continue; }
     if [[ "$block" == *.host.sh ]]; then   # runs on the host (reboots, host scripts); prelude-host.sh has the helpers
