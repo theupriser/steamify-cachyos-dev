@@ -12,7 +12,7 @@ info "before: pipewire $cachy_pw, wireplumber $cachy_wp"
 # 1. on: Valve's builds come from the local repository, which is first in pacman.conf
 info "turning HDMI-CEC volume on (downloads Valve's PipeWire and WirePlumber)..."
 sf --defaults --options "$opts,cecaudio" >/tmp/c4-on.txt; rc=$?
-[[ $rc -eq 0 ]] && pass "C4 on: Steamify exit 0" || { fail "C4 on: exit $rc: $(tail -n 3 /tmp/c4-on.txt | tr '\n' ' ')"; }
+[[ $rc -eq 0 ]] && pass "C4 on: Steamify exit 0" || { fail "C4 on: exit $rc: $(tail -n 3 /tmp/c4-on.txt | tr "\n" " ")"; grep -iE "error|fail|problem|could not|cannot" /tmp/c4-on.txt | head -n 12 | sed "s/^/INFO c4-on: /"; }
 grep -q '^\[steamify-valve-audio\]' /etc/pacman.conf && pass "C4 on: the repository is in pacman.conf" || fail "C4 on: no repository section"
 first="$(grep -E '^\[' /etc/pacman.conf | grep -v '^\[options\]' | head -n 1)"
 [[ "$first" == "[steamify-valve-audio]" ]] && pass "C4 on: it is the first repository (before CachyOS's)" || fail "C4 on: first repository is $first"
