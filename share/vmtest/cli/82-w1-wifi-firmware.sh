@@ -8,7 +8,7 @@ for lib in common state cec fremont-wifi menu; do . "$SCRIPT_DIR/lib/$lib.sh" 2>
 sudo() { "$@"; }
 WIFI_FW_DEST="$T/root/$WIFI_FW_FILE"
 mkdir -p "$T/pkgsrc/$(dirname "$WIFI_FW_FILE")"
-printf 'firmware-from-valve' | zstd -q -o "$T/pkgsrc/$WIFI_FW_FILE"
+printf 'firmware-from-valve' | zstd -q -f -o "$T/pkgsrc/$WIFI_FW_FILE"
 tar -cf "$T/good.tar" -C "$T/pkgsrc" usr
 mkdir -p "$T/emptysrc/usr/share"; tar -cf "$T/bad.tar" -C "$T/emptysrc" usr
 fetch_holo_pkg() { echo "$T/$PKG.tar"; }   # args: <dir> <package> <repo>
@@ -39,6 +39,24 @@ PKG=bad; wifi_enable >/dev/null 2>&1 && fail "bad package: enable succeeded" || 
 [[ ! -e "$WIFI_FW_DEST" ]] && pass "bad package: nothing installed" || fail "bad package: file installed"
 fetch_holo_pkg() { return 1; }
 wifi_enable >/dev/null 2>&1 && fail "download failed: enable succeeded" || pass "download failed: enable fails"
+
+# 4b. which build is in use: ours in updates/ first, else the package's; Valve's, CachyOS's or another one
+WIFI_FW_STOCK="$T/stock/amss.bin.zst"; mkdir -p "$T/stock"
+WIFI_SHA_VALVE="$(printf 'valve-build' | sha256sum | cut -d' ' -f1)"; WIFI_SHA_CACHYOS="$(printf 'cachyos-build' | sha256sum | cut -d' ' -f1)"
+[[ -z "$(wifi_build)" ]] && pass "build: no firmware file at all: nothing" || fail "build: '$(wifi_build)' without a file"
+printf 'cachyos-build' | zstd -q -f -o "$WIFI_FW_STOCK"
+[[ "$(wifi_build)" == cachyos ]] && pass "build: the package's file is CachyOS's" || fail "build: '$(wifi_build)' for CachyOS's"
+[[ "$(wifi_label)" == *"in use: CachyOS's"* ]] && pass "label: says CachyOS's build is in use" || fail "label: $(wifi_label)"
+printf 'something-newer' | zstd -q -f -o "$WIFI_FW_STOCK"
+[[ "$(wifi_build)" == unknown ]] && pass "build: another build (a newer linux-firmware): unknown" || fail "build: '$(wifi_build)' for an unknown file"
+printf 'valve-build' | zstd -q -f -o "$WIFI_FW_STOCK"
+[[ "$(wifi_build)" == valve ]] && pass "build: the package already ships Valve's" || fail "build: '$(wifi_build)' for Valve's in the package"
+: > "$T/fetched"; fetch_holo_pkg() { echo x > "$T/fetched"; return 1; }
+wifi_enable >/dev/null 2>&1 && [[ ! -s "$T/fetched" && ! -e "$WIFI_FW_DEST" ]] && pass "enable: the package already has Valve's build: nothing downloaded or installed" || fail "enable: fetched or installed although linux-firmware has it"
+printf 'cachyos-build' | zstd -q -f -o "$WIFI_FW_STOCK"
+mkdir -p "$(dirname "$WIFI_FW_DEST")"; printf 'valve-build' | zstd -q -f -o "$WIFI_FW_DEST"
+[[ "$(wifi_build)" == valve && "$(wifi_label)" == *"in use: SteamOS's"* ]] && pass "build: our file in updates/ wins over the package's" || fail "build: updates/ file not preferred"
+rm -rf "$T/root"
 
 # 5. menu: opt-in child of machine, offered only where wifi_available, versioned
 [[ " ${COMPONENTS[*]} " == *" wifi "* && "${PARENT[wifi]}" == machine ]] && pass "menu: wifi is a sub-option of machine" || fail "menu: wifi not registered under machine"
