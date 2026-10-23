@@ -1,6 +1,8 @@
 # Sent to the guest in front of every block (scripts/vmsuite.sh): helpers and Steamify's libs.
 # ssh has no Plasma session: the theme item (Vapor layout) needs one (vmrun.sh does the same).
-export XDG_RUNTIME_DIR=/run/user/$(id -u) WAYLAND_DISPLAY=wayland-0 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$(id -u)/bus
+export XDG_RUNTIME_DIR=/run/user/$(id -u) DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$(id -u)/bus
+# Plasma's Wayland socket: wayland-0, or wayland-1 when the login had to be restarted (a restarted plasmalogin gets the next one)
+WAYLAND_DISPLAY="$(cd "$XDG_RUNTIME_DIR" 2>/dev/null && ls -d wayland-[0-9]* 2>/dev/null | grep -v lock | head -n 1)"; export WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-wayland-0}"
 info() { echo "INFO $*"; }
 pass() { echo "PASS $*"; }; fail() { echo "FAIL $*"; }; skip() { echo "SKIP $*"; }
 sudo mountpoint -q /mnt || sudo mount -t 9p -o trans=virtio,version=9p2000.L repo /mnt

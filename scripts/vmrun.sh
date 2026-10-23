@@ -12,7 +12,8 @@ GUEST_REPO="${GUEST_REPO:-/mnt}"
 GUEST_UID="${GUEST_UID:-1000}"
 # The guest login shell is fish, so pass values in through the bash script itself.
 { printf 'input=%q repo=%q uid=%q\n' "$input" "$GUEST_REPO" "$GUEST_UID"; cat << 'REMOTE'
-export XDG_RUNTIME_DIR=/run/user/$uid WAYLAND_DISPLAY=wayland-0 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$uid/bus
+export XDG_RUNTIME_DIR=/run/user/$uid DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$uid/bus
+WAYLAND_DISPLAY="$(cd "$XDG_RUNTIME_DIR" 2>/dev/null && ls -d wayland-[0-9]* 2>/dev/null | grep -v lock | head -n 1)"; export WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-wayland-0}"   # wayland-1 after a restarted login
 log=/tmp/wizard.log
 # shellcheck disable=SC2059
 printf "$input" | "$repo/steamify.sh" > "$log" 2>&1; echo "exit=$?" >> "$log"
