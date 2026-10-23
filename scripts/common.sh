@@ -29,7 +29,7 @@ vm_scp() { local -a k; mapfile -t k < <(_vm_key_opts); scp -q -P "$VM_PORT" "${V
 
 # One Konsole for every test run: it follows $TEST_LOG, which the test scripts append to.
 # Started only when there is a desktop, the run is headless and no such window exists.
-TEST_LOG="${TEST_LOG:-$HOME/vms/test.log}"
+TEST_LOG="${TEST_LOG:-${VMS:-$HOME/vms}/test.log}"
 view_start() {
     [[ -n "${VM_HEADLESS:-}" && -z "${CI:-}" && -n "${WAYLAND_DISPLAY:-}${DISPLAY:-}" ]] && command -v konsole >/dev/null || return 0
     systemctl --user is-active --quiet vmtest-view 2>/dev/null && return 0

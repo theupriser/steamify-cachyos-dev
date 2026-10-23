@@ -12,12 +12,13 @@
 # has its own directory ~/vms/run-<suite> and ssh port, where every block gets a new qcow2 overlay of the
 # base (instant, no snapshot restore), and the host's package cache (VM_CACHE, ~/vms/pkg-cache) is bound
 # over pacman's cache, so packages are downloaded once for all. Log: $VM_DIR.log. Exit status = FAILs.
-# Env: ONLY=<block name prefix> runs just that block; SRC (default ~/vms/steamify-vm); REPO (default ../steamify-cachyos).
+# Env: ONLY=<block name prefix> runs just that block; VMS (default ~/vms; ~/projects/vms on the Steam Machine); SRC (default $VMS/steamify-vm); REPO (default ../steamify-cachyos).
 set -uo pipefail
 here="$(cd "$(dirname "$0")" && pwd)"
 repo="$(cd "$here/.." && pwd)"
 desk=kde; [[ "${1:-}" == gnome* || "${2:-}" == gnome* ]] && desk=gnome
-src="${SRC:-$HOME/vms/steamify-vm}"; [[ $desk == gnome ]] && src="${SRC:-$HOME/vms/gnome-vm}"
+vms="${VMS:-$HOME/vms}"   # VMS: where the VMs, their overlays and the package cache live (on the Steam Machine: ~/projects/vms)
+src="${SRC:-$vms/steamify-vm}"; [[ $desk == gnome ]] && src="${SRC:-$vms/gnome-vm}"
 base="$src/base-ssh-ready.qcow2"
 
 prepare_base() {   # once, under a lock (parallel suites): the ssh-ready snapshot as a stand-alone image
@@ -36,9 +37,9 @@ dir="$repo/share/vmtest/$suite"
 [[ -d "$dir" ]] || { echo "No suite $suite (folders in share/vmtest/)" >&2; exit 2; }
 case "$suite" in gnome*) port=2307 ;; cli) port=2301 ;; menu) port=2302 ;; hw) port=2303 ;; installer) port=2304 ;; toggles) port=2305 ;; nvidia) port=2306 ;; *) port=2390 ;; esac
 export VM_PORT="${VM_PORT:-$port}"
-export VM_DIR="$HOME/vms/run-$suite"
+export VM_DIR="$vms/run-$suite"
 export REPO="${REPO:-$repo/../steamify-cachyos}"
-export VM_CACHE="${VM_CACHE-$HOME/vms/pkg-cache}"
+export VM_CACHE="${VM_CACHE-$vms/pkg-cache}"
 export VM_MEM="${VM_MEM:-4G}"   # three VMs at once next to a desktop: 8G each pushed the host into swap
 prepare_base || { echo "FAIL no base image" >&2; exit 1; }
 mkdir -p "$VM_DIR"

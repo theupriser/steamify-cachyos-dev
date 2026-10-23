@@ -28,7 +28,7 @@ export VM_USER
 . "$here/common.sh"
 # The pacman package cache, on the host and shared by every VM you install
 # (9p tag `cache`, see run.sh): a second install downloads nothing. VM_CACHE= (empty) turns it off.
-export VM_CACHE="${VM_CACHE-$HOME/vms/pkg-cache}"
+export VM_CACHE="${VM_CACHE-${VMS:-$HOME/vms}/pkg-cache}"
 
 force=false iso="" run_flags=()
 while [[ $# -gt 0 ]]; do
