@@ -1,3 +1,4 @@
+# since: 2.9.1
 # R1.1-R1.6, R1.10: the menu on an existing desktop, driven with scripted input (each row builds on the last).
 menu() { printf "$1" | bash /mnt/steamify.sh 2>&1 | sed 's/\x1b\[[0-9;]*m//g'; }
 # R1.1: first-run ticks: everything but Boot into desktop and BIOS

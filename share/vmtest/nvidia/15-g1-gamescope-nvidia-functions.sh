@@ -1,3 +1,4 @@
+# since: 2.12.0
 # G1: lib/gamescope-nvidia.sh's pieces without installing anything (the patched gamescope on NVIDIA): version compare, CPU variant, the
 # pinned checksums, a damaged package and no GitHub, the update notice, the pre-flight, the failure reminder, the environment files
 # and the display wrapper. Covers TESTPLAN G1.

@@ -1,3 +1,4 @@
+# since: 2.15.0
 # GN7: KDE and GNOME installed together: the login manager stays, both themes are offered, the preferred desktop decides.
 info "installing Plasma next to GNOME (a few minutes)..."
 sudo pacman -S --needed --noconfirm plasma-desktop >/tmp/gn7.pac 2>&1; rc=$?

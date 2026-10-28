@@ -106,6 +106,11 @@ is checked on the real RTX 5080 PC (N6).
 | N5 | package removed + no GitHub: `gsn_install_package`; then `--options notify` | installed again from the download cache and starts; turn-off: environment files, wrapper, drop-in, kernel parameters, early-load file, hook gone; patched gamescope package stays |
 | N6 | real RTX 5080 PC | **by hand**: gaming mode picture clean (no corruption), display's own mode and refresh rate, Steam UI size, switching to the desktop and back, suspend/resume, newer-release update notice |
 
+> **Version tags** (2026-10-28): every automated block carries `# since: X.Y.Z`, the runner skips blocks that don't apply to the Steamify version under test
+> (`gnome` is 2.15.0, `cli/70-k1` and `cli/80-l1` too); see AGENTS.md. Run on release/2.14.3 (82cc838): toggles 42, hw 78, cli 175, menu 37, installer 4,
+> nvidia 86, limine 43, systemd-boot 42, grub 42 passed, 0 failed; failed: cli C4 off (a test that compared with the installed version, fixed), "launcher is off"
+> in the three plain-PC checks (present before this release).
+
 ### F2.14.3 Steamify's pacman repository (`feature/gsn-pacman-repo`; suite `nvidia`, block `16-g2-pacman-repo.sh`; repo: theupriser/steamify-pacman-repo)
 
 From 2.14.3 the patched gamescope on NVIDIA and the python-hid placeholder come from a signed pacman repository (one database per CPU

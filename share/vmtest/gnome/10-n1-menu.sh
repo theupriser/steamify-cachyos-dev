@@ -1,3 +1,4 @@
+# since: 2.15.0
 # GN1: the menu and the checks on a GNOME (GDM) PC, the new GNOME items: the GNOME theme is offered, Plasma's theme and single user mode are not.
 menu() { printf "$1" | bash /mnt/steamify.sh 2>&1 | sed 's/\x1b\[[0-9;]*m//g'; }
 [[ "$(desktop_kind)" == gnome ]] && pass "GN1 desktop_kind: gnome" || fail "GN1 desktop_kind: $(desktop_kind)"

@@ -1,3 +1,4 @@
+# since: 2.9.1
 # R1.7 / H2: HDMI-CEC with vivid (fake TV and remote): scripts/vmcec.sh prints PASS/FAIL/SKIP (2 SKIP in the VM: wake from TV, sleep).
 # base: applied
 info "applying Steamify (a few minutes)..."

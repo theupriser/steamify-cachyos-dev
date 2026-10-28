@@ -12,6 +12,11 @@
 # has its own directory ~/vms/run-<suite> and ssh port, where every block gets a new qcow2 overlay of the
 # base (instant, no snapshot restore), and the host's package cache (VM_CACHE, ~/vms/pkg-cache) is bound
 # over pacman's cache, so packages are downloaded once for all. Log: $VM_DIR.log. Exit status = FAILs.
+# Version requirements: `# since: X.Y.Z` (and `# until: X.Y.Z`, the last version) in a block's first 8 lines, or a file `since` / `until` in the
+# suite folder (the whole suite), limit a check to the Steamify versions it is for: the VERSION of $REPO/steamify.sh is compared with
+# sort -V; a check that does not apply prints a SKIP line (the version in the line), so release branches can run the same test tree.
+# TEST_VERSION=X.Y.Z (env) is used instead of the checkout's VERSION (to see what would run); NEW_ONLY=1 runs only what is new in this
+# release: the blocks and suites whose `since` has the same major.minor as the version under test.
 # Env: ONLY=<block name prefix> runs just that block; VMS (default ~/vms; ~/projects/vms on the Steam Machine); SRC (default $VMS/steamify-vm); REPO (default ../steamify-cachyos).
 set -uo pipefail
 here="$(cd "$(dirname "$0")" && pwd)"
@@ -39,6 +44,15 @@ case "$suite" in gnome*) port=2307 ;; cli) port=2301 ;; menu) port=2302 ;; hw) p
 export VM_PORT="${VM_PORT:-$port}"
 export VM_DIR="$vms/run-$suite"
 export REPO="${REPO:-$repo/../steamify-cachyos}"
+# A whole suite for other versions (since / until files in its folder): nothing to start.
+_sv="${TEST_VERSION:-$(sed -n 's/^VERSION=//p' "$REPO/steamify.sh" 2>/dev/null | head -n 1)}"
+_sin="$(cat "$dir/since" 2>/dev/null)"; _unt="$(cat "$dir/until" 2>/dev/null)"
+if [[ -n "$_sv" ]]; then
+    _ge() { [[ "$(printf '%s\n%s\n' "$1" "$2" | sort -V | head -n 1)" == "$2" ]]; }
+    if [[ -n "${NEW_ONLY:-}" && -n "$_sin" && "${_sin%.*}" != "${_sv%.*}" ]]; then echo "== $suite: 0 passed, 0 failed, 1 skipped (not new in $_sv, NEW_ONLY)"; exit 0; fi
+    if [[ -n "$_sin" ]] && ! _ge "$_sv" "$_sin"; then echo "== $suite: 0 passed, 0 failed, 1 skipped (needs Steamify >= $_sin, this is $_sv)"; exit 0; fi
+    if [[ -n "$_unt" ]] && ! _ge "$_unt" "$_sv"; then echo "== $suite: 0 passed, 0 failed, 1 skipped (is for Steamify up to $_unt, this is $_sv)"; exit 0; fi
+fi
 export VM_CACHE="${VM_CACHE-$vms/pkg-cache}"
 export VM_MEM="${VM_MEM:-4G}"   # three VMs at once next to a desktop: 8G each pushed the host into swap
 prepare_base || { echo "FAIL no base image" >&2; exit 1; }
@@ -48,6 +62,21 @@ echo "$REPO" > "$VM_DIR/repo-path"; [[ -e "$VM_DIR/share" ]] || ln -s "$repo/sha
 . "$here/common.sh"
 log="$VM_DIR.log"
 view_start   # one shared Konsole (common.sh), headless on a desktop
+
+# --- Version requirements (see the header): which Steamify versions a block or a whole suite is for.
+steamify_version() { echo "${TEST_VERSION:-$(sed -n 's/^VERSION=//p' "$REPO/steamify.sh" | head -n 1)}"; }
+same_minor() { [[ "${1%.*}" == "${2%.*}" ]]; }   # 2.15.0 and 2.15.1 are the same release line
+ver_ge() { [[ "$(printf '%s\n%s\n' "$1" "$2" | sort -V | head -n 1)" == "$2" ]]; }   # $1 is $2 or newer
+version_why_not() {   # version_why_not <since> <until>: prints why this Steamify version doesn't fit, returns 0 if it doesn't
+    local v; v="$(steamify_version)"; [[ -n "$v" ]] || return 1
+    if [[ -n "${NEW_ONLY:-}" ]] && { [[ -z "$1" ]] || ! same_minor "$1" "$v"; }; then echo "not new in $v (NEW_ONLY)"; return 0; fi
+    if [[ -n "$1" ]] && ! ver_ge "$v" "$1"; then echo "needs Steamify >= $1, this is $v"; return 0; fi
+    if [[ -n "$2" ]] && ! ver_ge "$2" "$v"; then echo "is for Steamify up to $2, this is $v"; return 0; fi
+    return 1
+}
+block_version_skip() {   # block_version_skip <block>
+    version_why_not "$(head -n 8 "$1" | sed -n 's/^# since: *//p' | head -n 1)" "$(head -n 8 "$1" | sed -n 's/^# until: *//p' | head -n 1)"
+}
 
 vm_running() { pgrep -f "[h]ostfwd=tcp::$VM_PORT-" >/dev/null; }
 vm_stop() {
@@ -121,6 +150,8 @@ printf '\n===== vmsuite.sh %s (%s) =====\n' "$suite" "$(date +%T)"
 for block in "$dir"/*.sh; do
     [[ -z "${ONLY:-}" || "$(basename "$block")" == "$ONLY"* ]] || continue   # ONLY=50: just that block
     printf '\n##### %s %s\n' "$(date +%T)" "$(basename "$block" .sh)"
+    if ! head -n 8 "$block" | grep -q '^# since: '; then echo "FAIL $(basename "$block" .sh): no '# since: X.Y.Z' tag in its first 8 lines (every check says from which Steamify version it applies)"; continue; fi
+    if why="$(block_version_skip "$block")"; then echo "SKIP $(basename "$block" .sh): $why"; continue; fi
     cur_base=$base; cur_vars=$src/vars.ssh-ready.fd
     if head -n 5 "$block" | grep -q '^# base: applied'; then
         ( flock 8; prepare_applied ) 8>"$src/.applied.lock" && cur_base=$applied && cur_vars=$src/vars.applied.fd || echo "INFO no applied base, using the clean one"

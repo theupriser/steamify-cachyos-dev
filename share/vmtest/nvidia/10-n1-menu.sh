@@ -1,3 +1,4 @@
+# since: 2.12.0
 # N1: an NVIDIA PC (fake GPU), 2.12.0: the menu is the SteamOS conversion's, as on any PC. "Gaming on NVIDIA" (nvidia, bigpicture,
 # nvsilent) is not offered any more. Covers TESTPLAN N1.
 fake_nvidia

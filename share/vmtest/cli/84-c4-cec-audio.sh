@@ -1,3 +1,4 @@
+# since: 2.14.1
 # C4 (#107): "HDMI-CEC volume" (cecaudio) swaps PipeWire and WirePlumber for Valve's builds (real pacman, Valve's real packages) through a
 # local pacman repository listed before CachyOS's, keeps them through `pacman -Su`, refreshes it, and puts CachyOS's back (faked Steam Machine).
 # base: applied
@@ -6,7 +7,10 @@ RULE="$HOME/.config/wireplumber/wireplumber.conf.d/90-steamify-cec-volume.conf"
 ver() { pacman -Q "$1" 2>/dev/null | cut -d' ' -f2; }
 up() { local v="${1#*:}"; echo "${v%%-*}"; }   # 1:1.6.8-1.7 -> 1.6.8
 cp /etc/pacman.conf /tmp/pacman.conf.before
-cachy_pw="$(ver pipewire)"; cachy_wp="$(ver wireplumber)"; cachy_lp="$(ver libpipewire)"
+# What "CachyOS's build comes back" means: the version the sync databases offer. The installed one can be newer than the VM's
+# databases (the base image was updated after they were synced), and turning the option off installs from the databases.
+cand() { pacman -Si "$1" 2>/dev/null | awk '/^Version/ { print $3; exit }'; }
+cachy_pw="$(cand pipewire)"; cachy_wp="$(cand wireplumber)"; cachy_lp="$(cand libpipewire)"
 info "before: pipewire $cachy_pw, wireplumber $cachy_wp"
 
 # 1. on: Valve's builds come from the local repository, which is first in pacman.conf
@@ -59,7 +63,9 @@ sf --defaults --options "$opts" >/tmp/c4-off.txt; rc=$?
 [[ $rc -eq 0 ]] && pass "C4 off: Steamify exit 0" || fail "C4 off: exit $rc: $(tail -n 3 /tmp/c4-off.txt | tr '\n' ' ')"
 [[ "$(ver pipewire)" == "$cachy_pw" && "$(ver wireplumber)" == "$cachy_wp" && "$(ver libpipewire)" == "$cachy_lp" ]] && pass "C4 off: pipewire $cachy_pw and wireplumber $cachy_wp are back" || fail "C4 off: pipewire $(ver pipewire) (was $cachy_pw), wireplumber $(ver wireplumber) (was $cachy_wp)"
 grep -q 'steamify-valve-audio' /etc/pacman.conf && fail "C4 off: pacman.conf still lists the repository" || pass "C4 off: the repository is gone from pacman.conf"
-diff -q /etc/pacman.conf /tmp/pacman.conf.before >/dev/null && pass "C4 off: pacman.conf is the same as before" || fail "C4 off: pacman.conf differs from before: $(diff /etc/pacman.conf /tmp/pacman.conf.before | head -n 4 | tr '\n' ' ')"
+# Steamify's own repository section (steamify-pacman-repo) stays while a package from it is installed (the Steam Machine's DKMS drivers): not part of this comparison.
+nosteamify() { awk -v m="# Steamify: packages from steamify-pacman-repo, updated by pacman -Syu" '$0 == m { skip = 1; next } skip && /^\[steamify-/ { next } skip && /^(SigLevel|Server) *=/ { next } { skip = 0; print }' "$1" | grep -v '^$'; }
+diff -q <(nosteamify /etc/pacman.conf) <(nosteamify /tmp/pacman.conf.before) >/dev/null && pass "C4 off: pacman.conf is the same as before" || fail "C4 off: pacman.conf differs from before: $(diff <(nosteamify /etc/pacman.conf) <(nosteamify /tmp/pacman.conf.before) | head -n 4 | tr '\n' ' ')"
 [[ ! -e /var/lib/steamify/valve-audio && ! -e /var/lib/pacman/sync/steamify-valve-audio.db ]] && pass "C4 off: the repository and its database are removed" || fail "C4 off: repository files left"
 [[ ! -e "$RULE" && ! -e /etc/systemd/system/steamify-valve-audio.timer && ! -e /usr/local/lib/steamify/steamify-valve-audio ]] && pass "C4 off: rule, timer and script removed" || fail "C4 off: rule, timer or script left"
 pacman -Q steamdeck-dsp >/dev/null 2>&1 && fail "C4 off: steamdeck-dsp is still installed" || pass "C4 off: steamdeck-dsp (Valve's dependency) removed"

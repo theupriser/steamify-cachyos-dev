@@ -1,3 +1,4 @@
+# since: 2.9.1
 # R1.7 (CEC driver cache): Valve's CEC driver is downloaded once and kept in /var/cache/steamify, named after
 # its checksum; a new pin downloads its own file and removes the old one, a damaged file is replaced.
 # Offline: a private cache folder, and the host's cached copy as the "download" (file://), so GitHub's rate
@@ -5,6 +6,9 @@
 real="/var/cache/steamify/cros-ec-cec-${CEC_DRIVER_SHA256:0:12}.c"
 [[ -f "$real" ]] || { skip "R1.7 cache: no cached CEC driver on the host (~/vms/pkg-cache/steamify)"; exit 0; }
 dir=$(mktemp -d); sudo chown root: "$dir"; sudo chmod 755 "$dir"   # like /var/cache/steamify: the user checks the cache
+# The package from Steamify's repository is the first route (toggles / cli blocks); this block is about the sources route, the fallback:
+# the repository is made unreachable.
+export STEAMIFY_REPO_URL=http://127.0.0.1:9
 export CEC_DRIVER_URL="file://$real" CEC_DRIVER_CACHE="$dir/cros-ec-cec-${CEC_DRIVER_SHA256:0:12}.c"
 errs=""
 run() { out=$(cec_driver_enable 2>&1 | sed 's/\x1b\[[0-9;]*m//g'); errs+=$(grep -B6 '^\[ERROR\]' <<< "$out" | tr '\n' '|'); }   # sets out

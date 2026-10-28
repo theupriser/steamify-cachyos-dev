@@ -1,3 +1,4 @@
+# since: 2.9.1
 # R2.1: the ISO's installer step: a new user who never logged in gets plain `--defaults` (scripts/vminstallsim.sh).
 info "installer simulation: a new user, --defaults (a few minutes)..."
 out=$("$repo/scripts/vminstallsim.sh" --fresh 2>&1 | sed 's/\x1b\[[0-9;]*m//g')

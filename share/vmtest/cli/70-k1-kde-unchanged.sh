@@ -1,3 +1,4 @@
+# since: 2.15.0
 # K1: the GNOME prototype leaves KDE alone: KDE offers its own theme and single user mode and not the GNOME theme, the conversion
 # touches no GDM file and keeps CachyOS's session tools, --desktop works, the plasmalogin login manager is kept.
 [[ "$(desktop_kind)" == kde ]] && pass "K1 desktop_kind: kde" || fail "K1 desktop_kind: $(desktop_kind)"

@@ -1,3 +1,4 @@
+# since: 2.9.1
 # H4: Boot into desktop, reboot: Plasma straight after boot; Boot into gaming: plasma-login-manager autologin into gamescope (single user mode).
 conf=/etc/plasmalogin.conf.d/10-gamescope-autologin.conf
 info "applying Steamify (a few minutes)..."

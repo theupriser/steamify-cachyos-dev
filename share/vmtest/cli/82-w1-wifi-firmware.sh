@@ -1,3 +1,4 @@
+# since: 2.14.0
 # W1 (#108): "Wi-Fi firmware from SteamOS" (`wifi`) puts Valve's amss.bin for the Steam Machine's QCA2066 adapter in
 # /usr/lib/firmware/updates (nothing of linux-firmware is touched) and takes it out again. Valve's package is built here
 # (fetch_holo_pkg stubbed, sudo passes through, the destination is a throwaway dir): covers install, a bad package,

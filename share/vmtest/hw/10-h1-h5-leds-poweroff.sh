@@ -1,3 +1,4 @@
+# since: 2.9.1
 # H1 (LED driver) and H5 (power-off module) with the faked Steam Machine.
 # base: applied
 info "applying Steamify (installs packages, builds kernel modules: a few minutes)..."

@@ -1,3 +1,4 @@
+# since: 2.12.0
 # N2-N5 (2.12.0): the SteamOS conversion on a fake NVIDIA PC, for real (pacman, the patched gamescope from GitHub, limine, initramfs).
 # Covers TESTPLAN N2 (failure leaves the PC as it was), N3 (apply), N4 (the update path from "Gaming on NVIDIA"), N5 (offline reinstall
 # from the cache, turn off).
@@ -60,7 +61,7 @@ yes_ 'grep -q "nvidia-drm.modeset=1" /proc/cmdline && grep -q "nvidia-drm.fbdev=
 # N5: turn off.
 info "N5 turning the conversion off..."
 rc="$(g 'fake_nvidia; sf --defaults --options notify > /tmp/n5off.log; echo "rc=$?"' | tail -n 1)"
-[[ "$rc" == rc=0 ]] && pass "N5 turn-off exit 0" || { fail "N5 turn-off: $rc: $(g 'tail -n 15 /tmp/n5off.log')"; return 0 2>/dev/null || exit 0; }
+[[ "$rc" == rc=0 ]] && pass "N5 turn-off exit 0" || { fail "N5 turn-off: $rc: $(g 'grep -aiE "error|fail|warn" /tmp/n5off.log | tail -n 8; echo ---; tail -n 4 /tmp/n5off.log')"; return 0 2>/dev/null || exit 0; }
 yes_ '! test -e ~/.config/environment.d/99-steamify-gamescope-nvidia.conf && ! grep -qs gbm_scanout ~/.config/gamescope-session/environment' && pass "N5 the GBM setting is gone from both files" || fail "N5 env files remain"
 yes_ '! test -e ~/.local/share/steamify/bin/gamescope && ! test -e ~/.config/systemd/user/gamescope-session.service.d/steamify-display.conf' && pass "N5 the display wrapper and drop-in are gone" || fail "N5 display files remain"
 yes_ '! grep -q nvidia-drm /etc/default/limine' && pass "N5 the kernel parameters are gone from /etc/default/limine" || fail "N5 limine defaults"

@@ -1,3 +1,4 @@
+# since: 2.9.1
 # F5: --options launcher,vram,poweroff: poweroff brings Steam Machine support; conversion off, plasmalogin unchanged.
 dm_before=$(current_display_manager)
 info "applying Steamify (installs packages, builds kernel modules: a few minutes)..."

@@ -1,3 +1,4 @@
+# since: 2.9.1
 # H3: BIOS update, the whole flow with WIZARD_BIOS_DRY_RUN=1 (never flashes). The VM reports an older BIOS.
 # env: BIOS_VERSION=F7F0107
 # The BIOS row's number by its name (a new menu item shifts the numbers).

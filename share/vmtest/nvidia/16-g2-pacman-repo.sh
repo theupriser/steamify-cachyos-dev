@@ -1,3 +1,4 @@
+# since: 2.14.3
 # G2/G3: Steamify's pacman repository (theupriser/steamify-pacman-repo). G2: the key and the [steamify-<variant>] section in a copy of
 # pacman.conf (enable, again, another variant, a build made here, disable; the real pacman.conf is never touched), then the real signed
 # database and a signature-checked download of a package from GitHub (a private database path, no partial update of the VM).

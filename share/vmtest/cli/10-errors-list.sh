@@ -1,3 +1,4 @@
+# since: 2.9.1
 # G1-G3 (--defaults --list), F1, F2, F6 (bad arguments): read-only, nothing may change.
 before=$(ls -R ~/.local/state/steamify 2>/dev/null | md5sum)
 rejects() {   # rejects <expected message> <args...>: exit 1 and the message

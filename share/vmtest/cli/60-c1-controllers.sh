@@ -1,3 +1,4 @@
+# since: 2.10.0
 # C1-C3: extended controller support: the repo's DKMS drivers (xone + dongle firmware, xpadneo) are installed and built for every
 # installed kernel; a second run is quiet; turning it off removes them again. The VM has no dongle or controller: this covers
 # the packages, the headers and the DKMS builds, not the hardware. Covers TESTPLAN C1 (on), C2 (again), C3 (off).

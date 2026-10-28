@@ -1,3 +1,4 @@
+# since: 2.9.1
 # F4: --options theme,single,machine --boot desktop: single brings the conversion; the rest stays off.
 info "applying Steamify (installs packages, builds kernel modules: a few minutes)..."
 sf --defaults --options theme,single,machine --boot desktop >/dev/null; rc=$?

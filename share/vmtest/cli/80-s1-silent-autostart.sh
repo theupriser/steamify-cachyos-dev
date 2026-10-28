@@ -1,3 +1,4 @@
+# since: 2.14.0
 # S1 (#109): "Start Steam silently in desktop mode" (`silent`) writes Steam's own autostart entry with
 # `-steamdeck -silent` (the flag gaming mode starts Steam with; without it the two sessions disagree on the
 # client branch and the Steam Beta choice is lost). Covers the entry from the system steam.desktop and from the

@@ -1,3 +1,4 @@
+# since: 2.14.0
 # W2 (#108): "Wake-on-LAN" (`wol`) is a NetworkManager drop-in (ethernet.wake-on-lan=64 in a connection-* section),
 # re-applied to the wired devices, removed again on off. "Wake-on-WLAN" (`wowlan`) a NetworkManager dispatcher script (when the Wi-Fi comes up: before the first suspend of a boot) and a systemd sleep hook
 # (right before every suspend) that run `iw phy ... wowlan enable magic-packet` (NetworkManager ignores the setting with the iwd backend);

@@ -1,3 +1,4 @@
+# since: 2.14.0
 # S2 (#109): "Add as non-Steam game" restarts Steam after editing shortcuts.vdf. With the SteamOS conversion on it must
 # start `steam -steamdeck -silent` (gaming mode's flag: without it the client branch, and the Steam Beta choice, flip);
 # without the conversion plain `steam -silent`. Steam, pgrep and systemd-run are stubbed: nothing real is started.

@@ -1,3 +1,4 @@
+# since: 2.15.0
 # GN2: the SteamOS conversion on GDM: autologin, session in AccountsService, GDM-aware session tools, hook, sudoers, GNOME extras.
 info "applying the conversion on GNOME (installs gamescope, steam: a few minutes)..."
 sf --defaults --options gaming,launcher --boot gamescope >/tmp/gn2.out; rc=$?
