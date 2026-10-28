@@ -26,14 +26,17 @@ saved="${GSN_SHA256[generic]}"; GSN_SHA256[generic]="$(sha256sum "$GSN_BACKUP_DI
 [[ "$(gsn_fetch_package generic 2>/dev/null)" == "$GSN_BACKUP_DIR/$f" ]] && pass "G1 offline: the copy that came with Steamify is used when its hash matches" || fail "G1 backup copy with a matching hash not used"
 GSN_SHA256[generic]="$saved"; rm -f "$GSN_BACKUP_DIR/$f"
 
-# The update notice (the installed package is faked).
-gsn_package_installed() { return 0; }; gsn_installed_version() { echo 3.16.31-3; }
-state_set gamescope_nvidia checked "$(date +%s)"
-state_set gamescope_nvidia latest 3.16.32-1; gsn_update_pending && pass "G1 a newer release than the installed package: update pending" || fail "G1 update not pending"
-state_set gamescope_nvidia latest 3.16.31-3; gsn_update_pending && fail "G1 update pending for the same version" || pass "G1 the same version: no update"
-state_set gamescope_nvidia checked 1
-gsn_update_pending; [[ "$(state_get gamescope_nvidia checked 0)" -gt 1 ]] && pass "G1 the look at GitHub is remembered, offline changes nothing" || fail "G1 check time not stored"
-unset -f gsn_package_installed gsn_installed_version
+# The update notice (the installed package is faked): since 2.14.3 only "the patched gamescope is installed but pacman.conf does not
+# list Steamify's repository yet" (a PC set up before); new builds come with pacman -Syu and show nothing.
+gsn_package_installed() { return 0; }; gsn_installed_version() { echo "$GSN_VERSION"; }
+export GSN_PACMAN_CONF="$T/pacman.conf"; cp /etc/pacman.conf "$GSN_PACMAN_CONF"
+gsn_update_pending && pass "G1 the package without the repository in pacman.conf: update pending" || fail "G1 update not pending"
+printf '\n[steamify-v3]\nSigLevel = Required DatabaseRequired\nServer = %s\n' "$STEAMIFY_REPO_URL" >> "$GSN_PACMAN_CONF"
+gsn_update_pending && fail "G1 update pending although the repository is listed" || pass "G1 the repository is listed: no update (new builds come with pacman -Syu)"
+sed -i '/^\[steamify-v3\]/,$d' "$GSN_PACMAN_CONF"; state_set gamescope_nvidia variant local
+gsn_update_pending && fail "G1 update pending for a build made here" || pass "G1 a build made here stays out of the repository: no update"
+state_set gamescope_nvidia variant ""
+unset -f gsn_package_installed gsn_installed_version; unset GSN_PACMAN_CONF
 
 # The pre-flight.
 msg="$(gsn_preflight)" && pass "G1 gsn_preflight passes on a normal PC" || fail "G1 gsn_preflight: $msg"

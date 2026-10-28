@@ -106,6 +106,22 @@ is checked on the real RTX 5080 PC (N6).
 | N5 | package removed + no GitHub: `gsn_install_package`; then `--options notify` | installed again from the download cache and starts; turn-off: environment files, wrapper, drop-in, kernel parameters, early-load file, hook gone; patched gamescope package stays |
 | N6 | real RTX 5080 PC | **by hand**: gaming mode picture clean (no corruption), display's own mode and refresh rate, Steam UI size, switching to the desktop and back, suspend/resume, newer-release update notice |
 
+### F2.14.3 Steamify's pacman repository (`feature/gsn-pacman-repo`; suite `nvidia`, block `16-g2-pacman-repo.sh`; repo: theupriser/steamify-pacman-repo)
+
+From 2.14.3 the patched gamescope on NVIDIA and the python-hid placeholder come from a signed pacman repository (one database per CPU
+level: `steamify-generic|v3|v4|znver4`, key `767F317A...`, hosted as the assets of release `repo`; a workflow copies new releases of
+`steamify-gamescope-nvidia` into it hourly and builds `packages/` there). New gamescope builds then arrive with `pacman -Syu`.
+
+| # | Step | Expect |
+|---|---|---|
+| G1 (changed) | update notice (`15-g1-...`) | the conversion shows as an update only for a PC that has the package but not the `[steamify-*]` section yet; with the section, or after a build made here: no update |
+| G2 | `16-g2-pacman-repo.sh`, a copy of pacman.conf | enable: key trusted, `[steamify-v3]` last, signatures required; again: one section; another level replaces it; a build made here: no section; disable: pacman.conf as it was and the key gone |
+| G2 (network) | same file, private dbpath | the signed database downloads; it lists the patched gamescope (pin or newer), the python-hid placeholder and both DKMS packages; a package downloads with its signature; without the key the same download is refused |
+| G3 | same file | python-hidapi kept, the placeholder installed from the repository (not built), `python-hid` satisfied |
+| N7 | VM: `--options gaming` on the fake NVIDIA PC, then read `/etc/pacman.conf` | `[steamify-<variant of the installed build>]` is the last section; `pacman -Sy` works (partial update only in the VM); turn-off removes the section and the key and keeps the package |
+| N8 | real PC, after the next gamescope release | **by hand**: with the conversion on, `sudo pacman -Syu` installs the new `steamify-gamescope-nvidia` and nothing in Steamify has to run; Steamify shows no "(update)" for it |
+| D1 | kernel 7.3 (and later) with headers, `sudo pacman -U` of `steamify-cros-ec-cec-dkms` and `steamify-fremont-poweroff-dkms` from the repository | DKMS builds both for the kernel (compiled and installed on CachyOS 7.2.7-1 headers in a container; **7.3.0-5 not compiled yet**); Steamify does not use these packages yet (it still copies the sources), so there is no Steamify step to test |
+
 ### F2.10.0 Extended controller support (`feature/extended-controller-support`; suite `cli`, block `60-c1-controllers.sh`)
 
 Opt-in item: `xpadneo-dkms`, `xone-dkms` and `xone-dongle-firmware` from the CachyOS repo, DKMS-built for every kernel. The VM has no
