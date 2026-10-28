@@ -10,6 +10,10 @@ cp /etc/pacman.conf "$STEAMIFY_PACMAN_CONF"
 sections() { grep -c '^\[steamify-' "$STEAMIFY_PACMAN_CONF"; }
 same_as_orig() { diff <(grep -v '^$' /etc/pacman.conf) <(grep -v '^$' "$STEAMIFY_PACMAN_CONF") >/dev/null; }
 
+# Offline: no database to fetch, so no section either (pacman -S would stop with "could not find database"); the next online run adds it.
+STEAMIFY_REPO_URL=http://127.0.0.1:9 steamify_repo_enable v3 >/dev/null 2>&1 && fail "G2 offline: steamify_repo_enable succeeded" || pass "G2 offline: steamify_repo_enable fails"
+[[ -z "$(steamify_repo_section)" ]] && same_as_orig && pass "G2 offline: no section left, pacman.conf as it was" || fail "G2 offline: a section without a database was left"
+
 steamify_repo_enable v3 && pass "G2 steamify_repo_enable v3" || fail "G2 steamify_repo_enable v3"
 [[ "$(steamify_repo_section)" == steamify-v3 ]] && pass "G2 the section [steamify-v3] is in pacman.conf" || fail "G2 section: $(steamify_repo_section)"
 sudo pacman-key --list-keys "$STEAMIFY_REPO_KEY" >/dev/null 2>&1 && pass "G2 pacman trusts the repository's key" || fail "G2 key not in the keyring"
