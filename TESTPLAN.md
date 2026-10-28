@@ -135,7 +135,7 @@ level: `steamify-generic|v3|v4|znver4`, key `767F317A...`, hosted as the assets 
 | V1 | `fetch_holo_pkg` (cecd), (linux-firmware-holo, holo-main), `fetch_valve_presets` | each downloads through pacman with Valve's repository and passes the signature check (container, 2026-10-28: holo-3.9 cecd 0.3.0-2, linux-firmware-holo 20261005.1-1, presets from jupiter-3.9) |
 | V2 | a name a CachyOS repository also has (mesa, pipewire) | refused; allowed only through `VALVE_REPLACE_OK` |
 | V3 | Valve's key missing from `/etc/steamify/valve-gnupg` | the download is refused (signature) |
-| V4 | `/etc/pacman.conf` after any of the Steam Machine options | no Valve repository in it (only `[steamify-valve-audio]` while HDMI-CEC volume is on, and `[steamify-<level>]`) |
+| V4 | `cli/85-v1-valve-names.sh` (V1-V4 in the block): Steamify applied (HDMI-CEC, Steam Machine, power-off fix) | no Valve repository in pacman.conf or pacman.d; the Valve fetch refuses `mesa`, `pipewire`, `linux-firmware`; `cecd`, `cec-audio-control`, `inputattach-cec-units` (from Valve) are in no system repository; PipeWire, WirePlumber, Mesa, firmware not older than the sync databases offer. **15 pass (2026-10-28)** |
 | V5 | HDMI-CEC volume on, then off (container with `pipewire-audio`, `-pulse`, `-alsa`, gst plugin installed) | on: PipeWire 1:1.6.8-1.7 (Valve) with a local repo of 10 signed files; off: CachyOS's 1:1.6.10-1 back. **Without `pipewire-audio` installed the swap fails on its dependency (same with the old mirror code); a real Steam Machine has it** |
 | V6 | Steam Machine (`hw` suite VM `--fremont`, real hardware) | CEC, Wi-Fi firmware, desktop extras, HDMI-CEC volume still work end to end; **not run yet** |
 

@@ -27,17 +27,7 @@ saved="${GSN_SHA256[generic]}"; GSN_SHA256[generic]="$(sha256sum "$GSN_BACKUP_DI
 [[ "$(gsn_fetch_package generic 2>/dev/null)" == "$GSN_BACKUP_DIR/$f" ]] && pass "G1 offline: the copy that came with Steamify is used when its hash matches" || fail "G1 backup copy with a matching hash not used"
 GSN_SHA256[generic]="$saved"; rm -f "$GSN_BACKUP_DIR/$f"
 
-# The update notice (the installed package is faked): since 2.14.3 only "the patched gamescope is installed but pacman.conf does not
-# list Steamify's repository yet" (a PC set up before); new builds come with pacman -Syu and show nothing.
-gsn_package_installed() { return 0; }; gsn_installed_version() { echo "$GSN_VERSION"; }
-export STEAMIFY_PACMAN_CONF="$T/pacman.conf"; cp /etc/pacman.conf "$STEAMIFY_PACMAN_CONF"
-gsn_update_pending && pass "G1 the package without the repository in pacman.conf: update pending" || fail "G1 update not pending"
-printf '\n[steamify-v3]\nSigLevel = Required DatabaseRequired\nServer = %s\n' "$STEAMIFY_REPO_URL" >> "$STEAMIFY_PACMAN_CONF"
-gsn_update_pending && fail "G1 update pending although the repository is listed" || pass "G1 the repository is listed: no update (new builds come with pacman -Syu)"
-sed -i '/^\[steamify-v3\]/,$d' "$STEAMIFY_PACMAN_CONF"; state_set gamescope_nvidia variant local
-gsn_update_pending && fail "G1 update pending for a build made here" || pass "G1 a build made here stays out of the repository: no update"
-state_set gamescope_nvidia variant ""
-unset -f gsn_package_installed gsn_installed_version; unset STEAMIFY_PACMAN_CONF
+# (The update notice: nvidia/17 for 2.12.0 to 2.14.2, nvidia/18 for 2.14.3 on.)
 
 # The pre-flight.
 msg="$(gsn_preflight)" && pass "G1 gsn_preflight passes on a normal PC" || fail "G1 gsn_preflight: $msg"
