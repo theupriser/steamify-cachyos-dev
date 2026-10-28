@@ -43,6 +43,27 @@ sudo sed -i '/^# Steamify: packages from steamify-pacman-repo/,+3d' /etc/pacman.
 sudo pacman -Sy >/dev/null 2>&1 < /dev/null && pass "R2 the documented sed one-liner gets pacman working again" || fail "R2 the sed one-liner did not help"
 [[ "$(sec)" == 0 ]] && pass "R2 and no section is left" || fail "R2 section left after the sed"
 
+# repair before removal: the key and the keyring are gone, the repository is listed and pacman is blocked
+sf --add-repo >/dev/null
+brk() { sudo pacman -Rdd --noconfirm steamify-keyring >/dev/null 2>&1 < /dev/null; sudo pacman-key --delete "$F" >/dev/null 2>&1; }
+brk
+sudo pacman -Sy >/dev/null 2>&1 < /dev/null && fail "R2 repair: pacman -Sy works although the key is gone" || pass "R2 repair: broken first (pacman -Sy fails)"
+sf --repair-repo >/tmp/r2-repair.txt; rc=$?
+[[ $rc -eq 0 ]] && pass "R2 --repair-repo: exit 0" || fail "R2 --repair-repo: exit $rc: $(tail -n 3 /tmp/r2-repair.txt | tr "\n" " ")"
+sudo pacman -Sy >/dev/null 2>&1 < /dev/null && pass "R2 after --repair-repo pacman -Sy works" || fail "R2 pacman -Sy still fails after the repair"
+pacman -Q steamify-keyring >/dev/null 2>&1 && [[ "$(sec)" == 1 ]] && pass "R2 keyring reinstalled, the repository stays listed" || fail "R2 after the repair: keyring $(pacman -Q steamify-keyring 2>&1 | head -n 1), sections $(sec)"
+# the same by itself at the start of a run
+brk; rm -f ~/.local/state/steamify/repo/checked 2>/dev/null
+sf --defaults --options notify >/tmp/r2-heal.txt; rc=$?
+grep -q 'works again' /tmp/r2-heal.txt && pass "R2 a normal run repairs the repository first" || fail "R2 no self-heal in the run: $(grep -iE 'steamify.s pacman|repair|taking it out' /tmp/r2-heal.txt | head -n 3 | tr "\n" " ")"
+sudo pacman -Sy >/dev/null 2>&1 < /dev/null && [[ "$(sec)" == 1 ]] && pass "R2 pacman works and the repository is still listed (repaired, not removed)" || fail "R2 after the self-heal: sections $(sec)"
+
+# a working repository is left alone: no repair, no removal (the check once reported a healthy one as broken)
+rm -f ~/.local/state/steamify/repo/checked 2>/dev/null
+sf --defaults --options notify >/tmp/r2-ok.txt; rc=$?
+grep -qi "doesn.t work\|repairing\|taking it out" /tmp/r2-ok.txt && fail "R2 a working repository was touched: $(grep -iE "doesn.t work|repairing|taking it out" /tmp/r2-ok.txt | head -n 2 | tr "\n" " ")" || pass "R2 a working repository is left alone (no repair, no removal)"
+[[ "$(sec)" == 1 ]] && pass "R2 and it stays listed" || fail "R2 the working repository was removed"
+
 # and back
 sf --add-repo >/dev/null; rc=$?
 [[ "$(sec)" == 1 ]] && pacman -Q steamify-keyring >/dev/null 2>&1 && pass "R2 --add-repo lists it again, keyring included" || fail "R2 --add-repo again: sections $(sec)"
