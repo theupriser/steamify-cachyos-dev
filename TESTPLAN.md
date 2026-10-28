@@ -123,6 +123,17 @@ level: `steamify-generic|v3|v4|znver4`, key `767F317A...`, hosted as the assets 
 | D1 | `hw` suite or a Steam Machine: `--options machine,cec` / the poweroff and LED items | each driver is installed as a package from the repository (`pacman -Q steamify-cros-ec-cec-dkms steamify-fremont-poweroff-dkms steamify-leds-valve-dkms`), DKMS `installed` for every kernel with headers, a copy of an older Steamify in `/usr/src` replaced, the AUR `leds-valve-dkms-git` replaced; turning the item off removes the package; with the repository unreachable the old way (sources / AUR) still works. Done in a container (install, replace, remove, section and key come and go) on CachyOS 7.2.7-1 headers; **the VM and kernel 7.3.0-5 are open** |
 | D2 | repository section | `[steamify-<level>]` is added by the first package and stays while any of them is installed; gone with the last |
 
+### F2.14.3 Valve's packages from Valve's repositories (`feature/valve-repo-config`; `lib/valve-repo.sh`)
+
+| # | Step | Expect |
+|---|---|---|
+| V1 | `fetch_holo_pkg` (cecd), (linux-firmware-holo, holo-main), `fetch_valve_presets` | each downloads through pacman with Valve's repository and passes the signature check (container, 2026-10-28: holo-3.9 cecd 0.3.0-2, linux-firmware-holo 20261005.1-1, presets from jupiter-3.9) |
+| V2 | a name a CachyOS repository also has (mesa, pipewire) | refused; allowed only through `VALVE_REPLACE_OK` |
+| V3 | Valve's key missing from `/etc/steamify/valve-gnupg` | the download is refused (signature) |
+| V4 | `/etc/pacman.conf` after any of the Steam Machine options | no Valve repository in it (only `[steamify-valve-audio]` while HDMI-CEC volume is on, and `[steamify-<level>]`) |
+| V5 | HDMI-CEC volume on, then off (container with `pipewire-audio`, `-pulse`, `-alsa`, gst plugin installed) | on: PipeWire 1:1.6.8-1.7 (Valve) with a local repo of 10 signed files; off: CachyOS's 1:1.6.10-1 back. **Without `pipewire-audio` installed the swap fails on its dependency (same with the old mirror code); a real Steam Machine has it** |
+| V6 | Steam Machine (`hw` suite VM `--fremont`, real hardware) | CEC, Wi-Fi firmware, desktop extras, HDMI-CEC volume still work end to end; **not run yet** |
+
 ### F2.10.0 Extended controller support (`feature/extended-controller-support`; suite `cli`, block `60-c1-controllers.sh`)
 
 Opt-in item: `xpadneo-dkms`, `xone-dkms` and `xone-dongle-firmware` from the CachyOS repo, DKMS-built for every kernel. The VM has no
