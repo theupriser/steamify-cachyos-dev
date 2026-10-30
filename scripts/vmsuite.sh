@@ -12,6 +12,7 @@
 # has its own directory ~/vms/run-<suite> and ssh port, where every block gets a new qcow2 overlay of the
 # base (instant, no snapshot restore), and the host's package cache (VM_CACHE, ~/vms/pkg-cache) is bound
 # over pacman's cache, so packages are downloaded once for all. Log: $VM_DIR.log. Exit status = FAILs.
+# Progress: a "~~ ████░░░░ 45%  block 5/11  N passed, M failed" line before every block and at the end (share of blocks done).
 # Version requirements: `# since: X.Y.Z` (and `# until: X.Y.Z`, the last version) in a block's first 8 lines, or a file `since` / `until` in the
 # suite folder (the whole suite), limit a check to the Steamify versions it is for: the VERSION of $REPO/steamify.sh is compared with
 # sort -V; a check that does not apply prints a SKIP line (the version in the line), so release branches can run the same test tree.
@@ -145,10 +146,26 @@ EOT
         cp "$VM_DIR/vars.fd" "$src/vars.applied.fd" && applied_stamp > "$applied.stamp"
 }
 
+# Progress: one "~~" line before every block (and one at the end) with a bar, the share of blocks done and the checks so far (blocks are known up front, so
+# the percentage needs no list of expected check counts that goes stale). The line starts with "~~", which none of the parsers
+# (vmprogress.sh, vmtest.sh) looks for.
+blocks_total=0
+for block in "$dir"/*.sh; do
+    [[ -z "${ONLY:-}" || "$(basename "$block")" == "$ONLY"* ]] && blocks_total=$((blocks_total + 1))
+done
+blocks_done=0
+progress() {   # progress <passed> <failed>: the blocks done so far
+    local pct=$((blocks_done * 100 / (blocks_total > 0 ? blocks_total : 1))) cells=$((blocks_done * 20 / (blocks_total > 0 ? blocks_total : 1))) bar="" i
+    for ((i = 0; i < 20; i++)); do (( i < cells )) && bar+="█" || bar+="░"; done
+    printf '~~ %s %3d%%  block %d/%d  %d passed, %d failed\n' "$bar" "$pct" "$blocks_done" "$blocks_total" "$1" "$2"
+}
+count_checks() { grep -ac "^$1" "$log" 2>/dev/null || true; }
 {
 printf '\n===== vmsuite.sh %s (%s) =====\n' "$suite" "$(date +%T)"
 for block in "$dir"/*.sh; do
     [[ -z "${ONLY:-}" || "$(basename "$block")" == "$ONLY"* ]] || continue   # ONLY=50: just that block
+    progress "$(count_checks PASS)" "$(count_checks FAIL)"
+    blocks_done=$((blocks_done + 1))
     printf '\n##### %s %s\n' "$(date +%T)" "$(basename "$block" .sh)"
     if ! head -n 8 "$block" | grep -q '^# since: '; then echo "FAIL $(basename "$block" .sh): no '# since: X.Y.Z' tag in its first 8 lines (every check says from which Steamify version it applies)"; continue; fi
     if why="$(block_version_skip "$block")"; then echo "SKIP $(basename "$block" .sh): $why"; continue; fi
@@ -164,6 +181,7 @@ for block in "$dir"/*.sh; do
     fi
     cat "$repo/share/vmtest/prelude.sh" "$block" | vm_ssh -o ConnectTimeout=6 -o LogLevel=ERROR bash -s 2>&1 | sed -u 's/\x1b\[[0-9;]*m//g'
 done
+progress "$(count_checks PASS)" "$(count_checks FAIL)"
 vm_stop
 } 2>&1 | tee "$log" | sed -u "s/^/[$suite] /" >> "$TEST_LOG"
 rc=${PIPESTATUS[0]}   # an abort inside the braces must not pass as 0 failed checks
