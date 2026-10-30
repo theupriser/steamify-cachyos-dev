@@ -34,5 +34,11 @@ view_start() {
     [[ -n "${VM_HEADLESS:-}" && -z "${CI:-}" && -n "${WAYLAND_DISPLAY:-}${DISPLAY:-}" ]] && command -v konsole >/dev/null || return 0
     systemctl --user is-active --quiet vmtest-view 2>/dev/null && return 0
     mkdir -p "$(dirname "$TEST_LOG")"; touch "$TEST_LOG"
-    systemd-run --user -q --collect --unit=vmtest-view konsole --hold -e tail -n 60 -F "$TEST_LOG" >/dev/null 2>&1 || true
+    # vmtestview.py follows the log with a progress bar per suite pinned to the bottom; plain tail without python3.
+    local viewer; viewer="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/vmtestview.py"
+    if command -v python3 >/dev/null 2>&1 && [[ -f "$viewer" ]]; then
+        systemd-run --user -q --collect --unit=vmtest-view konsole --hold -e python3 "$viewer" "$TEST_LOG" >/dev/null 2>&1 || true
+    else
+        systemd-run --user -q --collect --unit=vmtest-view konsole --hold -e tail -n 60 -F "$TEST_LOG" >/dev/null 2>&1 || true
+    fi
 }

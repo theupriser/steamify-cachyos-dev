@@ -15,6 +15,8 @@ wsl-build-host, progress-report, steamify-iso-release, steamify-branch-cleanup).
 - Following a run: one monitor (`scripts/vmprogress.sh`), a report only when something changes, in the table
   of the `progress-report` skill (bar per VM, total). Never a timed "no change" message.
 - Headless is for automated runs (default in `vmtest.sh`); a VM started by hand for the user has a window.
+- Following a run live: `scripts/vmtestview.py` (the test Konsole runs it): the log scrolls and one progress bar per suite plus a total stay on the bottom lines;
+  `--once` prints one frame as text. vmsuite.sh writes the `~~ <bar> NN%  block a/b  P passed, F failed` lines it reads.
 - Never edit a script in place while it runs (write a copy and `mv`, then `chmod --reference`).
 - Kill/pgrep patterns: bracket them (`[q]emu`) or your own shell matches itself.
 
