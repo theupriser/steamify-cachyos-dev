@@ -8,7 +8,11 @@ curl -fsL --retry 2 --max-time 120 https://github.com/theupriser/steamify-cachyo
 oldsf() { bash "$old" "$@" < /dev/null 2>&1 | sed 's/\x1b\[[0-9;]*m//g'; return "${PIPESTATUS[0]}"; }
 sudo pacman -S --needed --noconfirm vulkan-swrast > /tmp/swrast.log 2>&1   # gamescope's smoke test needs a Vulkan device (lavapipe)
 v="$(gsn_cpu_variant)"; f="steamify-gamescope-nvidia-3.16.31-3-$v.pkg.tar.zst"
-curl -fsL --retry 2 --max-time 300 "https://github.com/theupriser/steamify-gamescope-nvidia/releases/download/3.16.31-3/$f" -o "/tmp/$f" || { skip "U2 no download of the 3.16.31-3 package"; exit 0; }
+# Steamify's pacman repository keeps older versions (the sync archives every release); the source repo's release is the fallback.
+for u in https://github.com/theupriser/steamify-pacman-repo/releases/download/repo https://github.com/theupriser/steamify-gamescope-nvidia/releases/download/3.16.31-3; do
+    curl -fsL --retry 2 --max-time 300 "$u/$f" -o "/tmp/$f" && break
+done
+[[ -s "/tmp/$f" ]] || { skip "U2 no download of the 3.16.31-3 package"; exit 0; }
 sudo pacman -U --noconfirm --ask 4 "/tmp/$f" > /tmp/u2-pre.log 2>&1 || { fail "U2 could not install the old patched gamescope: $(tail -n 3 /tmp/u2-pre.log | tr "\n" " ")"; exit 0; }
 [[ "$(pacman -Q steamify-gamescope-nvidia | awk '{print $2}')" == 3.16.31-3 ]] && pass "U2 2.14.2 state: patched gamescope 3.16.31-3 ($v)" || fail "U2 old package not installed"
 
