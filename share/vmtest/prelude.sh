@@ -12,7 +12,7 @@ export SCRIPT_DIR=/mnt   # steamify.sh sets it; the libs alone read patches/ and
 if [[ -z "${XDG_CURRENT_DESKTOP:-}" ]]; then
     if pgrep -u "$USER" -x gnome-shell >/dev/null; then export XDG_CURRENT_DESKTOP=GNOME; elif pgrep -u "$USER" -x plasmashell >/dev/null; then export XDG_CURRENT_DESKTOP=KDE; fi
 fi
-for lib in common state desktop packages valve-repo login-manager single-user steam-desktop steam-machine fremont-poweroff vram-booster hdmi-refresh nvidia gamescope-nvidia controllers cec boot-session vapor-theme gnome-theme steamos-extras bios desktop-shortcut wizard-shortcut steam-game update-notifier; do
+for lib in common state desktop packages valve-repo login-manager single-user steam-desktop steam-machine steamdeck-hwmon steamdeck-hwmon-state steamdeck-hwmon-install steamdeck-hwmon-remove fremont-poweroff vram-booster hdmi-refresh nvidia gamescope-nvidia controllers cec boot-session vapor-theme gnome-theme steamos-extras bios desktop-shortcut wizard-shortcut steam-game update-notifier; do
     # shellcheck source=/dev/null
     . "lib/$lib.sh" 2>/dev/null
 done
