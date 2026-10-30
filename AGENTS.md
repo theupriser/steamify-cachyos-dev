@@ -16,7 +16,9 @@ wsl-build-host, progress-report, steamify-iso-release, steamify-branch-cleanup).
   of the `progress-report` skill (bar per VM, total). Never a timed "no change" message.
 - Headless is for automated runs (default in `vmtest.sh`); a VM started by hand for the user has a window.
 - Following a run live: `scripts/vmtestview.py` (the test Konsole runs it): the log scrolls and one progress bar per suite plus a total stay on the bottom lines;
-  `--once` prints one frame as text. vmsuite.sh writes the `~~ <bar> NN%  block a/b  P passed, F failed` lines it reads.
+  `--once` prints one frame as text. vmsuite.sh writes the `~~ <bar> NN%  block a/b  P passed, F failed` lines it reads, and vmtest.sh a `[plan] ~~ plan <suites>` line
+  first: the total bar is the share of the WHOLE package (every planned suite, started or not, weighted by the checks of its last complete run, kept in `<log dir>/expected/<suite>`).
+- README screenshot: `share/vmtest/shot/` (a suite that is never part of vmtest.sh; `VM_XRES`/`VM_YRES` make the VM's screen bigger): `SHOT_H=<px> scripts/vmsuite.sh shot`.
 - Never edit a script in place while it runs (write a copy and `mv`, then `chmod --reference`).
 - Kill/pgrep patterns: bracket them (`[q]emu`) or your own shell matches itself.
 

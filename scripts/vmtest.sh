@@ -59,6 +59,8 @@ for s in gnome toggles hw cli menu installer; do [[ " ${suites[*]} " == *" $s "*
 for s in "${suites[@]}"; do [[ " gnome toggles hw cli menu installer " == *" $s "* ]] || jobs_list+=("suite:$s"); done
 for l in "${loaders[@]}"; do jobs_list+=("loader:$l"); done
 for l in "${gloaders[@]}"; do jobs_list+=("generic:$l"); done
+# The suites of this run, named for the progress viewer (vmtestview.py): its total is the share of ALL of them, started or not.
+if [[ ${#suites[@]} -gt 0 ]]; then tl="${TEST_LOG:-${VMS:-$HOME/vms}/test.log}"; mkdir -p "$(dirname "$tl")"; echo "[plan] ~~ plan ${suites[*]}" >> "$tl"; fi
 jobtag() { [[ "${1%%:*}" == generic ]] && echo "${1#*:}-generic" || echo "${1#*:}"; }   # files and names of a job
 run_job() {   # run_job <kind:name>: output in /tmp/vmtest-<tag>.out, exit status in /tmp/vmtest-<tag>.rc
     local kind="${1%%:*}" name="${1#*:}" tag; tag="$(jobtag "$1")"

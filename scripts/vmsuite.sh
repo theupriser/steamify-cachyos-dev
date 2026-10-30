@@ -201,5 +201,9 @@ if [[ $rc -ne 0 && $fails -eq 0 ]]; then
     echo "FAIL $suite aborted (exit $rc): $(grep -v '^$' "$log" | tail -n 1)" | tee -a "$log"; fails=1
 fi
 echo "== $suite: $(grep -c '^PASS' "$log") passed, $fails failed, $(grep -c '^SKIP' "$log") skipped (log: $log)" | tee -a "$log"
+# A whole run of the suite: its number of checks is what the progress viewer expects of the next one.
+if [[ -z "${ONLY:-}" && ( $rc -eq 0 || $fails -gt 0 ) ]] && grep -aq '^PASS' "$log"; then
+    mkdir -p "$(dirname "$TEST_LOG")/expected"; grep -acE '^(PASS|FAIL|SKIP) ' "$log" > "$(dirname "$TEST_LOG")/expected/$suite"
+fi
 grep '^FAIL' "$log"
 exit "$fails"

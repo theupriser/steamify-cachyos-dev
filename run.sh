@@ -38,10 +38,10 @@ direct=()
 # that file, and reachable as a socket next to it (<file>.sock) to type into.
 [[ -n "${VM_SERIAL:-}" ]] && direct+=(-chardev "socket,id=ser0,path=$VM_SERIAL.sock,server=on,wait=off,logfile=$VM_SERIAL" -serial chardev:ser0)
 smbios=()
-gpu=virtio-vga-gl,xres=1920,yres=1080 gl=on
+gpu=virtio-vga-gl,xres=${VM_XRES:-1920},yres=${VM_YRES:-1080} gl=on
 # VM_NOGL=1: no virgl (software rendering in the guest), so QMP screendump
 # works (scripts/qmpshot.py); for the live ISO and Calamares.
-[[ -n "${VM_NOGL:-}" ]] && { gpu=virtio-vga,xres=1920,yres=1080; gl=off; }
+[[ -n "${VM_NOGL:-}" ]] && { gpu=virtio-vga,xres=${VM_XRES:-1920},yres=${VM_YRES:-1080}; gl=off; }
 [[ -n "${BIOS_VERSION:-}" ]] && smbios+=(-smbios "type=0,version=$BIOS_VERSION")
 for arg in "$@"; do
     case "$arg" in
@@ -59,7 +59,7 @@ done
 # VM_HEADLESS=1: no window (unattended tests, CI): plain virtio-vga and -display none;
 # QMP screendump works then too. The guest and ssh don't notice.
 display=(-display "gtk,gl=$gl,zoom-to-fit=off")
-[[ -n "${VM_HEADLESS:-}" ]] && { gpu=virtio-vga,xres=1920,yres=1080; display=(-display none); }
+[[ -n "${VM_HEADLESS:-}" ]] && { gpu=virtio-vga,xres=${VM_XRES:-1920},yres=${VM_YRES:-1080}; display=(-display none); }
 
 # UEFI firmware: Ubuntu's path, or Arch's (edk2-ovmf).
 ovmf=/usr/share/OVMF; ovmf_code=OVMF_CODE_4M.fd; ovmf_vars=OVMF_VARS_4M.fd
