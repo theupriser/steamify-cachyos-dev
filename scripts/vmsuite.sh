@@ -57,6 +57,17 @@ fi
 export VM_CACHE="${VM_CACHE-$vms/pkg-cache}"
 export VM_MEM="${VM_MEM:-4G}"   # three VMs at once next to a desktop: 8G each pushed the host into swap
 prepare_base || { echo "FAIL no base image" >&2; exit 1; }
+# Steamify downloads Valve's packages (CEC daemon, PipeWire, firmware) from their mirror. A network that blocks it (a DNS filter that
+# answers with a block page, or no route) makes those checks FAIL like regressions: stop before a VM starts, exit 2 (not a check
+# result). NET_CHECK=0 skips it. The package database is ~100 KB: a short answer is a block page.
+if [[ "${NET_CHECK:-1}" != 0 ]]; then
+    read -r _code _size < <(curl -s -m 20 -o /dev/null -w '%{http_code} %{size_download}\n' \
+        "https://steamdeck-packages.steamos.cloud/archlinux-mirror/holo-main/os/x86_64/holo-main.db" 2>/dev/null || echo "000 0")
+    if [[ "${_code:-000}" != 200 || "${_size:-0}" -lt 10000 ]]; then
+        echo "ABORT $suite: Valve's package mirror (steamdeck-packages.steamos.cloud) is not reachable from this network (HTTP ${_code:-000}, ${_size:-0} bytes): the checks that download Valve's packages would fail. Switch networks, or NET_CHECK=0." >&2
+        exit 2
+    fi
+fi
 mkdir -p "$VM_DIR"
 for f in vm-user ssh-key; do cp "$src/$f" "$VM_DIR/$f"; done
 echo "$REPO" > "$VM_DIR/repo-path"; [[ -e "$VM_DIR/share" ]] || ln -s "$repo/share" "$VM_DIR/share"
