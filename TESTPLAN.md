@@ -109,7 +109,7 @@ is checked on the real RTX 5080 PC (N6).
 > **Release 2.14.3, final run** (2026-10-28, release/2.14.3 at 4052c84): toggles 42, hw 78, cli 253, menu 37, installer 4, nvidia 101, limine 43, systemd-boot 42, grub 42 passed, 0 failed; the three plain-PC checks fail "launcher is off" (as before the release); gnome skipped by its version tag. New: cli/85 (Valve never overrides CachyOS), cli/86 and nvidia/22 (upgrade from the released 2.14.2: copied/built packages become pacman's), cli/87 (repository safeguards: keyring, repair before removal, --remove-repo/--add-repo).
 > 
 > **Version tags** (2026-10-28): every automated block carries `# since: X.Y.Z`, the runner skips blocks that don't apply to the Steamify version under test
-> (`gnome` is 2.15.0, `cli/70-k1` and `cli/80-l1` too); see AGENTS.md. Run on release/2.14.3 (82cc838): toggles 42, hw 78, cli 175, menu 37, installer 4,
+> (`gnome` is 2.16.0, `cli/70-k1` and `cli/80-l1` too); see AGENTS.md. Run on release/2.14.3 (82cc838): toggles 42, hw 78, cli 175, menu 37, installer 4,
 > nvidia 86, limine 43, systemd-boot 42, grub 42 passed, 0 failed; failed: cli C4 off (a test that compared with the installed version, fixed), "launcher is off"
 > in the three plain-PC checks (present before this release).
 

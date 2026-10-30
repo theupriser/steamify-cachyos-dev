@@ -1,4 +1,4 @@
-# since: 2.15.0
+# since: 2.16.0
 # GN9: GNOME theme on/off/on/off with a real relogin after each (what roughed up GNOME on the RTX 5080 PC: no top bar icons, search broken).
 # After every step: the dash favorites, gio list-apps, icon dirs, enabled extensions, shell errors, and the same checks as a fresh login.
 clear_screen() { vm_ssh "pkill cachyos-hello; pkill -f 'cachyos-hello'" >/dev/null 2>&1; python3 "$repo/scripts/qmpkey.py" "$VM_DIR/qmp.sock" esc esc >/dev/null 2>&1; sleep 3; }

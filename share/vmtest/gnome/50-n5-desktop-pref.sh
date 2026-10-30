@@ -1,4 +1,4 @@
-# since: 2.15.0
+# since: 2.16.0
 # GN5: --desktop kde|gnome|last: the desktop "Switch to Desktop" goes to; the session tool resolves it.
 for v in kde gnome last; do
     bash /mnt/steamify.sh --desktop $v </dev/null >/dev/null 2>&1; rc=$?

@@ -31,9 +31,9 @@ wsl-build-host, progress-report, steamify-iso-release, steamify-branch-cleanup).
 - **Version tags.** Every block in `share/vmtest/<suite>/` starts with `# since: X.Y.Z` (line 1; the Steamify release it was added for) and may
   have `# until: X.Y.Z` (the last release it applies to); `vmsuite.sh` compares them with the `VERSION` of the Steamify checkout it tests and
   prints `SKIP <block>: needs Steamify >= X` otherwise. A block without a tag FAILs. A suite folder may hold `since` / `until` files (the whole
-  suite skipped before a VM starts; `gnome` has `2.15.0`). `TEST_VERSION=2.15.0` pretends another version (see what would run);
+  suite skipped before a VM starts; `gnome` has `2.16.0`). `TEST_VERSION=2.16.0` pretends another version (see what would run);
   `NEW_ONLY=1` runs only what is new in this release line (same major.minor as the version under test). Pick the tag from where the behaviour
-  first exists in the product, not from the date the file was added: K1 and L1 were added while 2.14 was current and test 2.15 code.
+  first exists in the product, not from the date the file was added: K1 and L1 were added while 2.14 was current and test 2.16 code.
 - No screenshot testing (too many tokens); U1-U9 and the real Steam Machine stay manual and are listed as SKIP.
 
 ## State (2026-09-29; update when it changes)

@@ -1,4 +1,4 @@
-# since: 2.15.0
+# since: 2.16.0
 # GN3: turning the conversion off restores GDM: custom.conf, CachyOS's own session tools, no hook, no sudoers rule.
 conf=/etc/gdm/custom.conf
 sudo cp -a $conf /tmp/custom.conf.orig

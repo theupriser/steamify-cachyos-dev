@@ -1,4 +1,4 @@
-# since: 2.15.0
+# since: 2.16.0
 # GN6: gaming <-> GNOME on GDM with a stand-in gamescope session (gamescope doesn't render in the VM): boot into it, Switch to Desktop,
 # the shortcut's command back, reboot persistence, "boot into the desktop". Needs the host's ssh without polling during a relogin
 # (a logged-in ssh session keeps the old user manager alive).

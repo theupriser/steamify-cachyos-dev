@@ -1,4 +1,4 @@
-# since: 2.15.0
+# since: 2.16.0
 # GN4: the SteamOS theme for GNOME: gsettings, GTK4 colors, extensions; off puts everything back.
 get() { gsettings get "$@"; }
 before_scheme=$(get org.gnome.desktop.interface color-scheme); before_bg=$(get org.gnome.desktop.background picture-uri)

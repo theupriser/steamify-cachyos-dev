@@ -1,4 +1,4 @@
-# since: 2.15.0
+# since: 2.16.0
 # L1: login modes of the SteamOS conversion on plasma-login-manager (2.14.0): single user mode = autologin at every start,
 # single user mode off = multi-user (the login screen; only a session switch logs in again), the relogin helper, the greeter
 # session script, the 2.13.x leftovers, and nothing left behind with the conversion off.
