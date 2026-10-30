@@ -1,5 +1,5 @@
 # since: 2.15.0
-# FC1-FC7: Fremont fan monitoring / control (the "fancontrol" item below Steam Machine support) with the faked Steam Machine:
+# FC1-FC7: Fremont fan control / monitoring (the "fancontrol" item below Steam Machine support) with the faked Steam Machine:
 # install, modules for every kernel, ownership (pacman's package, or the sources Steamify stages when the repository can't be
 # used), autoload, jupiter-fan-control, re-apply, removal. The VM has no Valve EC: binding and RPM are the real machine's.
 # base: applied
